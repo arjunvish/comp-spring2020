@@ -8,24 +8,28 @@
 \usepackage{mathtools}
 
 \begin{document}
-\title{Survey of ITP Hammer Tools}
+\title{Hammers and Certified Checkers}
 \author{Arjun Viswanathan}
 \date{}
 \maketitle
 \begin{abstract}
 	Interactive theorem provers (ITPs) and automatic theorem provers (ATPs)
-	are two distinct categories of theorem provers with some significant 
-	trade-offs between the two. On the one hand, ITPs are typically robust
-	with a small, verified kernel resulting in a high degree of reliability.
-	However, they require user intervention in the proving process, only 
-	offering a minimal amount of automation. ATPs on the other hand are 
-	push-button theorem provers that use complex heuristics to prove 
+	are two distinct categories of theorem provers on different ends 
+	of the spectrum of theorem provers. On the one hand, 
+	ITPs are typically robust tools with a small, verified kernel 
+	allowing for a high degree of reliability. However, they 
+	require user intervention in the proving process, only
+	offering a minimal amount of automation. ATPs, on the other hand, 
+	are push-button theorem provers that use complex heuristics to prove 
 	theorems; as a consequence, they have a large code-base that is hard 
-	to maintain and prone to bugs. A lot of recent research has focused on 
-	bridging the gap between these two poles of theorem proving, quite often 
-	in the form of a tool called a hammer, whose goal - among other 
-	things - is to increase the automation in ITPs with the help of 
-	ATPs. This work aims to survey some popular hammer tools.
+	to maintain and susceptible to bugs. A lot of recent research 
+	has focused on bridging the gap between these two poles 
+	of theorem proving. Hammers and certified checkers are tools
+	that were born from this research, that have different 
+	approaches to this problem. This work aims to 
+	comprehensively study the differences between these 
+	tools from the point of view of using SMT solvers as
+	the ATPs enhancing automation in ITPs.
 \end{abstract}
 
 \section{Introduction}
@@ -37,13 +41,35 @@
 	attempt to prove these theorems using programs typically 
 	called tactics. Generally, this interface mimics a 
 	written mathematical proof with a context and goal 
-	that changes on the fly as you step through the parts 
+	that changes on the fly as one steps through the parts 
 	of the proof. The structures provided by the ITP are 
-	minimal and the user's mathematical structures are only 
+	minimal and the user's mathematical structures are 
 	defined on top of these, keeping the verified kernel of the 
 	ITP small. These proofs provide a high level of reliability
 	but are hard to come up with from the user's point of view. 
-	 
+	
+	Automatic theorem provers (ATPs) have grown rapidly over the 
+	past decades and refer to tools that allow automatic proving 
+	of logical formulas. Interaction between the user and the 
+	ATP is kept to a minimum; ideally, the user would provide a 
+	theorem to the ATP and the ATP either proves it or comes up
+	with a counter-example that disproves it. For this work, we 
+	will look at a particular sub-category of ATPs called 
+	satisfiability modulo theories (SMT)-solvers. SMT solvers 
+	input formulas in first order logic with equality and 
+	other background theories such as (integer, real, and 
+	machine integer) arithmetic, arrays, etc and determine
+	whether the formula is satisfiable or not. Depending 
+	on the theory, and depending on whether quantification
+	is enabled, the SMT-solver could also not answer the query. 
+	This satisfiability problem is the dual of the 
+	validity problem (proving a formula to be valid) - a 
+	formula can be proved to be valid by establishing that 
+	its negation is unsatisfiable. Although ATPs can also 
+	refer to superposition provers such as Vampire and SPASS, 
+	which have also been successfully used to provide 
+	automation to ITPs, the focus here is on leveraging 
+	SMT-solvers in ITPs.
 
 
 
