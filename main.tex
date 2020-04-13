@@ -38,7 +38,7 @@
 	software tools that allow formalizing of mathematical proofs.
 	They provide an expressive logic to state theorems in, and 
 	an interactive interface through which the user can 
-	attempt to prove these theorems using programs typically 
+	attempt to prove these theorems using programs 
 	called tactics. Generally, this interface mimics a 
 	written mathematical proof with a context and goal 
 	that changes on the fly as one steps through the parts 
@@ -58,10 +58,10 @@
 	satisfiability modulo theories (SMT)-solvers. SMT solvers 
 	input formulas in first order logic with equality and 
 	other background theories such as (integer, real, and 
-	machine integer) arithmetic, arrays, etc and determine
+	machine integer) arithmetic, arrays, etc. and determine
 	whether the formula is satisfiable or not. Depending 
-	on the theory, and depending on whether quantification
-	is enabled, the SMT-solver could also not answer the query. 
+	on the theory, and whether quantification
+	is enabled, the SMT-solver could also fail to answer the query. 
 	This satisfiability problem is the dual of the 
 	validity problem (proving a formula to be valid) - a 
 	formula can be proved to be valid by establishing that 
@@ -70,19 +70,183 @@
 	which have also been successfully used to provide 
 	automation to ITPs, the focus here is on leveraging 
 	SMT-solvers in ITPs.
+	
+	ATPs and ITPs clearly have different modes of operations
+	and come with their own advantages - ITPs certify their 
+	results with a high degree of trustworthiness although 
+	reaching the proofs might take some time and effort from 
+	the user; ATPs offer relatively quick and automated results, 
+	while not giving the same kind of guarantees that ITPs do.
+	A natural research question is whether we can get the best 
+	of both worlds - reliable proofs with maximum automation. 
+	In this work, we compare Sledgehammer and SMTCoq, 
+	two tools that take different approaches 
+	to this goal. A hammer helps an ITP prove lemmas by using 
+	an ATP to guide its proof search, and Sledgehammer is
+	the very first one of these. On the other hand, 
+	a certified checker is more tightly integrated with the ATP 
+	- it also converts proofs produced by the ATPs and 
+	checks them within the ITP. Thus, it gets results 
+	from outside the ITP but certifies them by checking them
+	inside the ITP. SMTCoq is the first and only 
+	certified checker to the extent of our knowledge.
+	
+	\textcolor{red}{Insert an image of a graph with SMT solvers
+	on one axis and proof assistants on the other, with
+	Sledgehammer and SMTCoq in the middle}
 
-
+	\textcolor{red}{Give a preview of the rest of the paper here}
 
 \section{Formal Preliminaries}
 \label{sec:prelim}
 
-
+\section{Related Work}
+\label{sec:rel}
+	\textcolor{red}{Hammer for resolution provers?}\\
+	\textcolor{red}{CoqHammer}\\
+	\textcolor{red}{Check related work of both papers.}\\
+	In ~\cite{10.1007/978-3-642-14052-5_14}, they integrate 
+	Z3 with Isabelle/HOL and HOL4 
+	using proof replaying, that is to verify 
+	the Z3 proofs in the ITP, similar to SMTCoq. However, 
+	~\cite{10.1007/978-3-642-22438-6_11} mentions that this
+	integratino wasn't useful. Instead, the reconstruction 
+	method using the in-house Metis solver was more 
+	successful. 
+	
+\section{SMT-Solvers}
+\label{sec:smt}
+	Boolean satisfiability, often called the SAT problem, 
+	is the problem of satisfying a Boolean formula, that is, 
+	consistently assigning values of $True$ or $False$ 
+	to the variables of the formula so that the entire 
+	formula evaluates to $True$. For example,
+	\begin{center}$(x \lor y) \land z$ \end{center}
+	can be satisfied by the 
+	assignment $\{x=True,\ y=False,\ z=True\}$. On the other hand, 
+	\begin{center} $x \land \neg x$ \end{center}
+	is unsatisfiable, no matter what value is assigned to $x$.
+	
+	Satisfiability Modulo Theories~\cite{DBLP:reference/mc/BarrettT18} 
+	or SMT lifts SAT to a level that includes theories. 
+	For example, 
+	\begin{center} $(a = b) \land (b = c) \land \neg (a = c)$ 
+	\end{center}
+	is a formula that is unsatisfiable in the theory of 
+	equality over uninterpreted functions. This is because, by
+	transitivity of $a = b$ and $b = c$, we have $a = c$. SMT 
+	allows us to be more expressive with our formulas, but 
+	this comes at the cost of more complicated decision 
+	procedures.
+	
+	SMT solvers have plenty of applications in formal methods 
+	and software verification. For instance, SMT solvers are used 
+	in the back-end of model checkers~\cite{DBLP:books/daglib/0020348}, 
+	which input mathematical 
+	models of a software system, and verify whether they 
+	satisfy a particular property or not. Another area of 
+	application is symbolic
+	execution~\cite{DBLP:journals/csur/BaldoniCDDF18}, 
+	which is to analyze a 
+	program to figure out what set of inputs work for each 
+	part of the program. Other uses of SMT solvers include 
+	program synthesis~\cite{synth}, static analysis, 
+	and interpolant generation~\cite{DBLP:journals/corr/abs-1111-5652}.
+	
+	Due to the recent emphasis on verifying results from SMT-solvers,
+	many SMT-solvers are proof producing. When an SMT-solver finds 
+	that a formula is satisfiable, an easily checkable proof of this is 
+	a satisfying model of the formula. However, when a solver 
+	concludes that a formula is unsatisfiable, it is more difficult 
+	to produce an acceptable proof of this. Most SMT-solvers 
+	follow some modification of the DPLL(T) algorithm, which tries
+	to satisfy the formula by propagating assignments, making 
+	choices on assignments when necessary, and concluding unsat
+	when all choices have been tried. Since this algorithm 
+	primarily operates on the resolution principle, 
+	a universally accepted proof calculus is one based 
+	on resolution. Specifically, a proof of unsatisfiability 
+	of a formula in CNF, is a tree with the input 
+	clauses and theory lemmas at the leaves, and the empty 
+	clause at the root. The resolution takes two clauses, 
+	a pivot element that occurs with opposite polarities 
+	in each of the clauses, and gives one clause that is 
+	a consequent of the premises. The idea is that, beginning 
+	with the input clauses and the theory lemmas (which might 
+	have their own sub-proof trees coming from the theory solvers), 
+	the tree derives that the empty clause holds, which is the 
+	most basic notion of unsatisfiable since the there 
+	is no way to satisfy the empty clause.
+	
+	Even though the calculus is common among the SMT-solvers, 
+	it hasn't been standardized. CVC4 uses a proof language called
+	LFSC or (LF with Side Conditions) that mixes declarative rules
+	with computable programs; veriT uses a rule-bases calculus
+	defined in a SMTLIB like syntax; Z3 uses a rule based calculus 
+	with a relatively lower level of granularity. 
+	
+\section{Sledgehammer}
+\label{sec:hammer}
+	Isabelle is a proof assistant or keeping with our terminology, 
+	an ITP. It allows for the formalizing of mathematical 
+	formulas. Isabelle/HOL is an instance of Isabelle that 
+	provides an expressive higher-order logic to prove theorems 
+	in its proof language Isar, and also consists of a large 
+	library of formally verified mathematics. 
+	
+	Sledgehammer is a component of Isabelle/HOL that uses 
+	external ATPs to guide Isabelle/HOL's proving. The ATPs 
+	used by Sledgehammer can be classified as resolution 
+	provers and SMT-solvers. This section expands on the work 
+	done to integrate SMT-solvers with Isabelle/HOL via 
+	Sledgehammer.
+\section{SMTCoq}
+\label{sec:cert}
 
 \section{Comparison}
 \label{sec:comp}
-
-
-
+	The most important difference between SMTCoq and Sledgehammer
+	is the extent to which they exploit the external SMT solver. 
+	Sledgehammer uses an external SMT-solver to guide it through 
+	proof search - it asks the SMT-solver whether a particular 
+	conjecture is provable; if the solver says yes, 
+	it tries to prove this conjecture in-house, and if it says 
+	no, it doesn't attempt to prove it. The SMT-solver thus 
+	saves time by telling the ITP which lemmas it shouldn't
+	waste its time on. SMTCoq has a more solid connection to 
+	the SMT-solver - once the SMT-solver says that a conjecture is 
+	provable, it produces a proof of the validity of this 
+	conjecture, and SMTCoq, after checking this proof in 
+	Coq, considers the lemma to be proven. Thus,
+	much more effort goes into making SMTCoq work - not only 
+	does the Coq conjecture need to be properly translated to 
+	SMTLIB, the proof produced by the SMT-solver also 
+	needs to be converted to something understandable 
+	by Coq and then checked within Coq.Translating from the ITP's 
+	higher order logic to the SMT-solver's first order logic 
+	is itself a challenging task that both Sledgehammer and
+	SMTCoq have an unsound solution for. \textcolor{red}{Make 
+	sure both are unsound.} This is ameliorated by the fact that
+	SMT-solvers have a common input format in SMTLIB, so the 
+	translation has a single target. Matters are more complicate 
+	when it comes to proofs produced by SMT-solvers - there isn't 
+	a common format of outputs. SMTCoq therefore has to deal with 
+	the additional challenge of checking proofs in different 
+	formats in Coq. It handles this by adapting the proof 
+	format of the veriT SMT-solver and translating proofs 
+	from other solvers to this format. While this is an impressive
+	effort, it does expand the trust-base to include the 
+	translator itself.
+	
+	\textcolor{red}{Say something about Coq -> SMTLIB vs 
+		Isabelle/HOL -> SMTLIB.}
+	
+	\textcolor{red}{premise selection?}
+	
+	\textcolor{red}{evaluation?}
+	
+	
+	
 \section{Conclusion and Moving Forward}
 \label{sec:conc}
 
