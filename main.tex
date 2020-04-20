@@ -8,14 +8,14 @@
 \usepackage{mathtools}
 
 \begin{document}
-\title{Hammers and Certified Checkers}
+\title{Automating Verifiers that Verify Other Verifiers (Using the Other Verifiers)}
 \author{Arjun Viswanathan}
 \date{}
 \maketitle
 \begin{abstract}
 	Interactive theorem provers (ITPs) and automatic theorem provers (ATPs)
 	are two distinct categories of theorem provers on different ends 
-	of the spectrum of theorem provers. On the one hand, 
+	of the spectrum of verifiers. On one hand, 
 	ITPs are typically robust tools with a small, verified kernel 
 	allowing for a high degree of reliability. However, they 
 	require user intervention in the proving process, only
@@ -88,8 +88,9 @@
 	- it also converts proofs produced by the ATPs and 
 	checks them within the ITP. Thus, it gets results 
 	from outside the ITP but certifies them by checking them
-	inside the ITP. SMTCoq is the first and only 
-	certified checker to the extent of our knowledge.
+	inside the ITP. SMTCoq is a certified checker 
+	for the Coq proof assistant that uses SAT and SMT solvers
+	for automation.
 	
 	\textcolor{red}{Insert an image of a graph with SMT solvers
 	on one axis and proof assistants on the other, with
@@ -110,7 +111,7 @@
 	using proof replaying, that is to verify 
 	the Z3 proofs in the ITP, similar to SMTCoq. However, 
 	~\cite{10.1007/978-3-642-22438-6_11} mentions that this
-	integratino wasn't useful. Instead, the reconstruction 
+	integration wasn't useful. Instead, the reconstruction 
 	method using the in-house Metis solver was more 
 	successful. 
 	
@@ -154,12 +155,13 @@
 	and interpolant generation~\cite{DBLP:journals/corr/abs-1111-5652}.
 	
 	Due to the recent emphasis on verifying results from SMT-solvers,
+	\textcolor{red}{Find a citation}
 	many SMT-solvers are proof producing. When an SMT-solver finds 
 	that a formula is satisfiable, an easily checkable proof of this is 
 	a satisfying model of the formula. However, when a solver 
 	concludes that a formula is unsatisfiable, it is more difficult 
 	to produce an acceptable proof of this. Most SMT-solvers 
-	follow some modification of the DPLL(T) algorithm, which tries
+	follow some version of the DPLL(T) algorithm, which tries
 	to satisfy the formula by propagating assignments, making 
 	choices on assignments when necessary, and concluding unsat
 	when all choices have been tried. Since this algorithm 
@@ -187,7 +189,7 @@
 	
 \section{Sledgehammer}
 \label{sec:hammer}
-	Isabelle is a proof assistant or keeping with our terminology, 
+	Isabelle is a proof assistant or, sticking to our terminology, 
 	an ITP. It allows for the formalizing of mathematical 
 	formulas. Isabelle/HOL is an instance of Isabelle that 
 	provides an expressive higher-order logic to prove theorems 
@@ -217,7 +219,7 @@
 	the SMT-solver - once the SMT-solver says that a conjecture is 
 	provable, it produces a proof of the validity of this 
 	conjecture, and SMTCoq, after checking this proof in 
-	Coq, considers the lemma to be proven. Thus,
+	Coq, certifies the lemma as proved. Thus,
 	much more effort goes into making SMTCoq work - not only 
 	does the Coq conjecture need to be properly translated to 
 	SMTLIB, the proof produced by the SMT-solver also 
@@ -238,13 +240,35 @@
 	effort, it does expand the trust-base to include the 
 	translator itself.
 	
-	\textcolor{red}{Say something about Coq -> SMTLIB vs 
+	\textcolor{red}{Say something about the logic translation 
+		Coq -> SMTLIB vs 
 		Isabelle/HOL -> SMTLIB.}
 	
 	\textcolor{red}{premise selection?}
 	
+	\textcolor{red}{What theories does each tool support?}
+	
 	\textcolor{red}{evaluation?}
 	
+	
+\section{To-Do}
+	\begin{enumerate}
+		\item Learn about HOL in SMT-solvers. Why are the approaches 
+		so different between the two sets of tools? Obviously because
+		HOL vs FOL but why can't this change? FOL tools use unsatisfiability 
+		as a dual of validity to prove stuff. HOL tools just use 
+		things like induction. And they are able to do this because
+		of human intervention?
+		\item Compare SMT solvers and ITPs just for propositional 
+		logic using a fairly simple example. Perhaps for just propositional 
+		logic, we can completely use an ATP within an ITP because 
+		of decidability? Then use theories, perhaps LIA, design a simple
+		example, show how the SMT solver would solve it, show how the 
+		ITP would solve it and then show what happens with 
+		Sledgehammer and Coqhammer.
+		\item What is the difference between resolution ATPs and SMT 
+		solvers and why are ATPs better with problems with quantifiers?
+	\end{enumerate}
 	
 	
 \section{Conclusion and Moving Forward}
