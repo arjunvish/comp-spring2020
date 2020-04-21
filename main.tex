@@ -202,6 +202,53 @@
 	provers and SMT-solvers. This section expands on the work 
 	done to integrate SMT-solvers with Isabelle/HOL via 
 	Sledgehammer.
+	
+	When a user wishes to find a proof for a conjecture using 
+	Sledgehammer, it first picks a few hundred relevant 
+	lemmas from Isabelle's libraries and sends them along 
+	with the conjecture to the ATP. The conjecture is 
+	translated from Isabelle's polymorphic higher-order 
+	logic to the ATP's first order logic. Sledgehammer 
+	runs this query parallelly by invoking all available 
+	ATPs. If the ATP is able to prove the conjecture, 
+	Isabelle's own prover metis sets out to reconstruct 
+	this proof. So essentially, the ATP just tells Isabelle 
+	when it doesn't need to bother proving a conjecture at 
+	all. \textcolor{red}{I'm thinking of a use case here: 
+	when I try to use the ITP and I have a subgoal, and I 
+	call Sledgehammer and it tells me its not provable, 
+	thanks to the ATP, do I just quit? Check out the usage.}
+	Additionally, metis also minimizes the proof because 
+	the ATPs could have needed many more lemmas than necessary.
+	
+	Sledgehammer has two different methods of integration 
+	with SMT-solvers. The first is through an smt proof 
+	method in Isabelle that relies on three SMT solvers - 
+	it trusts CVC3 and Yices as oracles while performing 
+	a step-by-step proof reconstruction of Z3 proofs. 
+	\textcolor{red}{Say more about the Z3 stuff here.}
+	Sledgehammer sends the conjecture to prove along 
+	with any user supplied facts to the SMT solvers 
+	using a translation similar to those of the ATPs 
+	and then either reconstructs or trusts the SMT solvers
+	results. Trusting SMT solvers isn't a dependable 
+	technique for previously mentioned reasons. The integration
+	with Z3, though successful, wasn't highly used. 
+	\textcolor{red}{Mention the results here} The developers
+	improved upon this by loosening the integration of 
+	Sledgehammer with SMT solvers in their next attempt.
+	
+	Sledgehammer reuses the architecture for the ATPs 
+	in its second attempt at leveraging SMT solvers. 
+	After relevance filtering of facts and translation to 
+	first order logic, if the SMT solver is able to
+	prove a conjecture, Sledgehammer tries to completely
+	reconstruct the proof locally using metis. If metis fails,
+	it then tries to reconstruct the proof step-by-step using 
+	the smt method. metis cannot handle theories other 
+	than equality so it does have to rely on the smt proof
+	method for those.
+	
 \section{SMTCoq}
 \label{sec:cert}
 
@@ -224,11 +271,12 @@
 	does the Coq conjecture need to be properly translated to 
 	SMTLIB, the proof produced by the SMT-solver also 
 	needs to be converted to something understandable 
-	by Coq and then checked within Coq.Translating from the ITP's 
+	by Coq and then checked within Coq. Translating from the ITP's 
 	higher order logic to the SMT-solver's first order logic 
-	is itself a challenging task that both Sledgehammer and
-	SMTCoq have an unsound solution for. \textcolor{red}{Make 
-	sure both are unsound.} This is ameliorated by the fact that
+	is itself a challenging task that until recently, Sledgehammer 
+	had an unsound solution for and SMTCoq still does. 
+	\textcolor{red}{Make sure SMTCoq is unsound.} 
+	This is ameliorated by the fact that
 	SMT-solvers have a common input format in SMTLIB, so the 
 	translation has a single target. Matters are more complicate 
 	when it comes to proofs produced by SMT-solvers - there isn't 
@@ -268,6 +316,7 @@
 		Sledgehammer and Coqhammer.
 		\item What is the difference between resolution ATPs and SMT 
 		solvers and why are ATPs better with problems with quantifiers?
+		\item Sledgehammer uses unsat cores, read up on them.
 	\end{enumerate}
 	
 	
