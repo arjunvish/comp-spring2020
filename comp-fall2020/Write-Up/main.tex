@@ -1,0 +1,78 @@
+\documentclass{article}
+\usepackage{proof}
+\usepackage{bussproofs}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{framed}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{mathtools}
+
+\begin{document}
+\title{SMT Solving for the Theory of Bit-Vectors}
+\author{Arjun Viswanathan}
+\date{}
+\maketitle
+\begin{abstract}
+	Satisfiability modulo theories (SMT) is the problem
+	of satisfying a first-order formula with theories such as integer, real, and bit-vector arithmetic, strings, 
+	sets, etc. This work focuses on the theory of 
+	bit-vector arithmetic and the state of the art for 
+	solving satisfiability of both quantified and 
+	quantifier-free bit-vector formulas. Bit-vectors 
+	are sequences of 0/1 bits, frequently used to 
+	represent and verify properties about 
+	finite-precision integers. Due to their closeness
+	to hardware, they are also used in hardware
+	verification.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+	\textcolor{red}{Introduce SAT solving and SMT solving}
+	\textcolor{red}{Introduce bit-vector solving with an 
+	example}
+	\textcolor{red}{Say something about quantifiers}
+	\textcolor{red}{Talk about state-of-the-art solvers 
+	for BV solving}
+	\textcolor{red}{Give a preview of the rest of the paper here}
+
+\section{Formal Preliminaries}
+\label{sec:prelim}
+	\textcolor{red}{Maybe introduce a running example?}
+
+\section{Quantifier-Free Fragment}
+\label{sec:qfbv}
+	Bit-blasting and binary decision diagrams. 
+	Model constructign calculus. Stochastic local search.
+	Boolector uses SLS + bit-blasting.
+	Lazy vs Eager solving?
+	~\cite{10.1007/978-3-642-22438-6_11} This is how you cite. 
+	
+\section{Quantified Bit-Vectors}
+\label{sec:bv}
+	Model-Based Quantifier Instantiation and CEGQI. 
+	
+\section{Using BVs to Reason about Z's}
+\label{sec:bv2Z}
+	SMTEN way.
+	Bedrock encoding.
+	SMTRAT.
+	
+\section{Separate Calculus for Different BV Ops?}
+\label{sec:calc}
+
+	
+	
+\section{To-Do}
+	\begin{enumerate}
+		\item Write some shit.
+	\end{enumerate}
+	
+	
+\section{Conclusion and Moving Forward}
+\label{sec:conc}
+
+\bibliographystyle{abbrv}
+\bibliography{bib}
+
+\end{document}

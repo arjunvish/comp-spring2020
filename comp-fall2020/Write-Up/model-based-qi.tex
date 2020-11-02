@@ -1,0 +1,112 @@
+\documentclass{article}
+\usepackage{proof}
+\usepackage{bussproofs}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{framed}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{mathtools}
+
+\begin{document}
+\title{Algorithm for Model-Based Quantifier Instantiation}
+\author{Arjun Viswanathan}
+\date{}
+\maketitle
+
+\section{Algorithm}
+	\begin{enumerate}
+		\item Given formula $F$, convert it to negation 
+		normal form and apply Skolemization to obtain an 
+		equisatisfiable formula of the form\\
+		$\phi \land \forall x_1, ..., x_n. \psi [x_1, ..., x_n]$.
+		\item Is $\phi$ satisfiable?
+		\begin{itemize}
+			\item No. Then, \\ 
+			$\phi \land \forall x_1, ..., x_n. \psi [x_1, ..., x_n]$ is unsatisfiable.\\
+			Return \textbf{UNSAT}.
+			\item Yes, with model $M$. Then, \\
+			Does $M$ satisfy $\forall x_1, ..., x_n. \psi [x_1, ..., x_n]$?\\
+			or\\
+			Is $\neg\hat{\psi}$ satisfiable?\\
+			where $\neg\hat{\psi} = \psi$ with values of $M$
+			substituted.
+			\begin{itemize}
+				\item No. Then, \\
+				$\hat{\psi}$ is valid, that is, \\
+				$\forall x_1, ..., x_n. \psi [x_1, ..., x_n]$ is satisfiable with model $M$.\\
+				Return \textbf{SAT} with model \textbf{M}.
+				\item Yes, by model $\neg\hat{\psi}[v_1, ..., v_n]$. Then,\\ 
+				$M$ isn't a model of 
+				$\forall x_1, ..., x_n. \psi [x_1, ..., x_n]$
+				by countermodel $v_1, ..., v_n$.\\
+				Let $\phi := \phi \land \psi[v_1, ..., v_n]$
+				and restart step $2$.
+			\end{itemize}
+		\end{itemize}
+	\end{enumerate}
+
+\section{Example}
+	\begin{itemize}
+		\item $F :\ 0 \le a < 3 \land \forall x . x + a >_u 1$.
+		\item Is $0 \le a < 3$ satisfiable? \\
+			\null\qquad Yes, by $M = \{a := 0\}$.
+		\item Is $\neg x + 0 >_u 1$ satisfiable? \\
+			\null\qquad Yes by $\{x := 0\}$.
+		\item Now,\\
+			$F :\ 0 \le a < 3 \land 0 + a >_u 1 \land \forall x . x + a >_u 1$.
+		\item Is $0 \le a < 3 \land 0 + a >_u 1$ 
+		satisfiable?\\
+			\null\qquad Yes, by $M = \{a := 2\}$.
+		\item Is $\neg x + 2 >_u 1$ satisfiable? \\
+		\null\qquad No.\\
+		\null\qquad Thus, the original formula $F$ is 
+		satisfiable by $M = \{a := 2\}$.
+	\end{itemize}
+\section{Fully Quantified Formulas}
+	A quantified formula $\forall x_1, ..., x_n. \psi [x_1, ..., x_n]$ is satisfiable iff 
+	$\neg \psi [x_1, ..., x_n]$ is unsatisfiable.\\
+	Otherwise, it is unsatisfiable. So if there is no 
+	quantifier-free part in $F$, the above procedure 
+	reduces to expanding quantifiers with all bit-vector
+	values of the corresponding bit-width.
+	
+\section{Example}
+	Consider $F$.
+	\begin{itemize}
+		\item $F :\ \forall x.\ x \ge_u 0$
+		\item Since the quantifier-free part of 
+		$F$ is just $\top$, it doesn't place any 
+		restrictions on the model $M$. 
+		\item So, our problem reduces to checking whether\\
+		$\neg (x \ge_u 0)$ is unsatisfiable.\\
+		It happens to be unsatisfiable and $F$ 
+		is satisfiable.
+		\item The only way to do this for some formulas
+		would be to instantiate $x$ with all possible
+		values which would be exponential in the size 
+		of $x$. In many cases, CVC4 has rewrite rules, 
+		and without those, invertibility conditions 
+		reduce this work.
+	\end{itemize}
+	Now consider $F$.
+	\begin{itemize}
+		\item $F :\ \forall x.\ x \ge_u 1$
+		\item Since the quantifier-free part of 
+		$F$ is just $\top$, it doesn't place any 
+		restrictions on the model $M$. 
+		\item So, our problem reduces to checking whether\\
+		$\neg (x \ge_u 1)$ is unsatisfiable.
+		\item The SMT solver might try model 
+		$M = \{x := 0\}$ but \\
+		$\neg (0 \ge_u 1)$ is not satisfiable.
+		\item The solver then tries model 
+		$M = \{x := 1\}$.\\
+		$\neg (1 \ge_u 1)$ is satisfiable
+		and thus $F$ is unsatisfiable.
+		\item Assuming the SMT solver tries values 
+		in increasing order starting from $0$, this 
+		could turn into a cumbersome process, if we were
+		checking say, $\forall x.\ x \ge_u 2^{64}-1$ for
+		64-bit $x$.
+\end{itemize}
+\end{document}
