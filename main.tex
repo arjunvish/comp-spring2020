@@ -8,7 +8,7 @@
 \usepackage{mathtools}
 
 \begin{document}
-\title{Automating Verifiers that Verify Other Verifiers (Using the Other Verifiers)}
+\title{SMT Solvers and Proof Assistants}
 \author{Arjun Viswanathan}
 \date{}
 \maketitle
@@ -42,7 +42,7 @@
 	called tactics. Generally, this interface mimics a 
 	written mathematical proof with a context and goal 
 	that changes on the fly as one steps through the parts 
-	of the proof. The structures provided by the ITP are 
+	of the proof. The data structures provided by the ITP are 
 	minimal and the user's mathematical structures are 
 	defined on top of these, keeping the verified kernel of the 
 	ITP small. These proofs provide a high level of reliability
@@ -106,6 +106,7 @@
 	\textcolor{red}{Hammer for resolution provers?}\\
 	\textcolor{red}{CoqHammer}\\
 	\textcolor{red}{Check related work of both papers.}\\
+	\textcolor{red}{NQTHM and ACL2 are the earliest combination of ATPs and ITPs according to the SMTCoq paper}
 	In ~\cite{10.1007/978-3-642-14052-5_14}, they integrate 
 	Z3 with Isabelle/HOL and HOL4 
 	using proof replaying, that is to verify 
@@ -177,7 +178,7 @@
 	with the input clauses and the theory lemmas (which might 
 	have their own sub-proof trees coming from the theory solvers), 
 	the tree derives that the empty clause holds, which is the 
-	most basic notion of unsatisfiable since the there 
+	most basic notion of unsatisfiability since the there 
 	is no way to satisfy the empty clause.
 	
 	Even though the calculus is common among the SMT-solvers, 
@@ -189,8 +190,7 @@
 	
 \section{Sledgehammer}
 \label{sec:hammer}
-	Isabelle is a proof assistant or, sticking to our terminology, 
-	an ITP. It allows for the formalizing of mathematical 
+	Isabelle is a proof assistant that allows for the formalizing of mathematical 
 	formulas. Isabelle/HOL is an instance of Isabelle that 
 	provides an expressive higher-order logic to prove theorems 
 	in its proof language Isar, and also consists of a large 
@@ -251,6 +251,33 @@
 	
 \section{SMTCoq}
 \label{sec:cert}
+	SMTCoq is a Coq plugin that uses SAT and SMT solvers to 
+	prove goals in Coq. Another way of looking at it is 
+	to think of SMTCoq as a checker for results produced 
+	by the SMT solver. SMTCoq allows the user to query 
+	a number of SAT/SMT solvers and if the solver is able 
+	to validate the query, that is, it determines that 
+	the negation of the conjecture is unsatisfiable, it 
+	produces a proof of unsatisfiability, which is checked 
+	SMTCoq to the trusted code base to the Coq kernel.
+	
+	SMTCoq deals with proof-producing solvers that are 
+	able to produce a resolution proof of unsatisfiability 
+	of the goal. This is essentially a proof tree that 
+	has at its leaves the input clauses and 
+	theory lemmas - clauses that are valid in a 
+	theory - and at its root, the empty clause which is 
+	the most basic notion of unsatisfiability. The 
+	resolution rule is applied to pairs of leaves/nodes 
+	of the tree to derive a new clause that is 
+	consistent with the inputs/lemmas, and is finally 
+	used to derive the empty clause. The leaves 
+	that consist of theory lemmas have sub-trees rooted 
+	at the leaf which represent the proof from the 
+	theory solver.
+	\textcolor{red}{Insert a figure with the resolution 
+	rule and a figure of the proof}
+	
 
 \section{Comparison}
 \label{sec:comp}
