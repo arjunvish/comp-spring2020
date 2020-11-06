@@ -24,11 +24,11 @@
 	theorems; as a consequence, they have a large code-base that is hard 
 	to maintain and susceptible to bugs. A lot of recent research 
 	has focused on bridging the gap between these two poles 
-	of theorem proving. Hammers and certified checkers are tools
-	that were born from this research, that have different 
+	of theorem proving. For instance, hammers and certified checkers 
+	are tools that were born from this research, that have different 
 	approaches to this problem. This work aims to 
-	comprehensively study the differences between these 
-	tools from the point of view of using SMT solvers as
+	comprehensively study these different tools 
+	from the point of view of using SMT solvers as
 	the ATPs enhancing automation in ITPs.
 \end{abstract}
 
@@ -38,9 +38,9 @@
 	software tools that allow formalizing of mathematical proofs.
 	They provide an expressive logic to state theorems in, and 
 	an interactive interface through which the user can 
-	attempt to prove these theorems using programs 
+	attempt to prove these theorems using methods 
 	called tactics. Generally, this interface mimics a 
-	written mathematical proof with a context and goal 
+	written mathematical proof with a context and a goal 
 	that changes on the fly as one steps through the parts 
 	of the proof. The data structures provided by the ITP are 
 	minimal and the user's mathematical structures are 
@@ -65,25 +65,28 @@
 	This satisfiability problem is the dual of the 
 	validity problem (proving a formula to be valid) - a 
 	formula can be proved to be valid by establishing that 
-	its negation is unsatisfiable. Although ATPs can also 
+	its negation is unsatisfiable. We focus only on 
+	quantifier-free fragments of the logic, which is in keeping 
+	with the present state-of-the-art. Although ATPs can also 
 	refer to superposition provers such as Vampire and SPASS, 
 	which have also been successfully used to provide 
 	automation to ITPs, the focus here is on leveraging 
 	SMT-solvers in ITPs.
 	
 	ATPs and ITPs clearly have different modes of operations
-	and come with their own advantages - ITPs certify their 
+	and offer distinct advantages - ITPs certify their 
 	results with a high degree of trustworthiness although 
 	reaching the proofs might take some time and effort from 
 	the user; ATPs offer relatively quick and automated results, 
 	while not giving the same kind of guarantees that ITPs do.
 	A natural research question is whether we can get the best 
 	of both worlds - reliable proofs with maximum automation. 
+	\textcolor{red}{Generalize?}
 	In this work, we compare Sledgehammer and SMTCoq, 
 	two tools that take different approaches 
 	to this goal. A hammer helps an ITP prove lemmas by using 
 	an ATP to guide its proof search, and Sledgehammer is
-	the very first one of these. On the other hand, 
+	the very first of these. On the other hand, 
 	a certified checker is more tightly integrated with the ATP 
 	- it also converts proofs produced by the ATPs and 
 	checks them within the ITP. Thus, it gets results 
@@ -103,6 +106,7 @@
 
 \section{Related Work}
 \label{sec:rel}
+	\textcolor{red}{QED Manisfesto}\\
 	\textcolor{red}{Hammer for resolution provers?}\\
 	\textcolor{red}{CoqHammer}\\
 	\textcolor{red}{Check related work of both papers.}\\
@@ -181,12 +185,95 @@
 	most basic notion of unsatisfiability since the there 
 	is no way to satisfy the empty clause.
 	
+	\begin{center}
+		$\infer[resolution]{\phi_1 \lor ... \lor \phi_n \lor 
+			\psi_1 \lor ... \lor \psi_m}
+		{\phi_1 \lor ... \lor \phi_n \lor \chi & \neg \chi 
+			\lor \psi_1 \lor ... \lor \psi_m}$ 
+	\end{center}
+	For instance,
+	\begin{center}
+		$\infer{a \lor c}{a \lor \neg b & b \lor c}$
+	\end{center}
+	\textcolor{red}{Insert a figure of the proof}
+	
 	Even though the calculus is common among the SMT-solvers, 
 	it hasn't been standardized. CVC4 uses a proof language called
-	LFSC or (LF with Side Conditions) that mixes declarative rules
-	with computable programs; veriT uses a rule-bases calculus
-	defined in a SMTLIB like syntax; Z3 uses a rule based calculus 
-	with a relatively lower level of granularity. 
+	LFSC or (Logical Framework with Side Conditions) that mixes 
+	declarative rules with computable programs; veriT uses a rule-bases 
+	calculus defined in a SMTLIB like syntax; Z3 uses a rule based 
+	calculus with a relatively lower level of granularity. 
+	
+\section{Proof Assistants}
+\label{itp}
+	
+\section{Hammers}
+\label{gen-hammers}
+	Hammers use ATPs to automate the proving of goals within ITPs
+	that depend on certain other lemmas. 
+	
+	While queries to SMT solvers are contained within a single 
+	file, this isn't necessarily the case for ITPs. An SMT file
+	typically consists along with declarations and definitions 
+	of a set of assertions and a query that checks whether 
+	their conjunction is satisfiable or not. 
+	One can imagine a set of hypotheses 
+	$H_1, H_2, ..., H_n$ and a conjecture $G$, with a 
+	typical goal in an ITP that looks like $L$:
+	\begin{center}
+		$L : H_1 \to H_2 \to ... \to H_n \to G$.
+	\end{center}
+	Proving $L$ is equivalent to proving the unsatisfiability 
+	of $\neg L$.
+	\begin{align*}
+		\neg L &= \neg (H_1 \to H_2 \to ... \to H_n \to G)\\
+		&= \neg (\neg H_1 \lor \neg H_2 \lor ... \lor \neg H_n \neg G)
+		& \text{by unfolding }\to \\
+		&= \neg \neg H_1 \land \neg \neg H_2 \land ... \land \neg \neg H_n 
+			\land \neg G
+		& \text{by De Morgan's law}\\
+		&= H_1 \land H_2 \land ... \land H_n \land \neg G
+		& \text{by double negation elimination}
+	\end{align*}
+	So the problem can equivalently be stated in the context of ATPs
+	as checking the unsatisfiability of a set of hypotheses 
+	along with the negation of the conjecture. This would look 
+	like the following SMT file:
+	\begin{verbatim}
+		assert H_1
+		assert H_2
+		...
+		assert H_n
+		assert G
+		check-sat
+	\end{verbatim}
+	However, goals in ITPs aren't necessarily self-contained 
+	as in $L$. The hypotheses needed to prove $G$ 
+	might have been proven earlier. In fact, ITPs have large
+	libraries of proven lemmas any of which might be potentially 
+	useful in proving a goal $G$. As such, picking
+	the hypotheses to send along with the negation of the 
+	goal to an ATP is challenging. This is called premise 
+	selection. The most basic form of premise selection 
+	is to allow for the user to find relevant facts 
+	to prove a conjecture. But given that these libraries 
+	have hundreds of lemmas, automatic methods to select 
+	premises is a more scalable and generalizable approach.
+	
+	The relevance filter by Meng and Paulson 
+	\cite{DBLP:journals/japll/MengP09}
+	for the Isabelle/HOL ITP selects relevant facts by 
+	giving priority to the number of symbols in common 
+	with the goal. The SInE (SUMO Inference Engine) 
+	\cite{10.1007/978-3-642-22438-6_23} does something 
+	similar in the ATP Vampire. The Divvy system 
+	\cite{10.1007/978-3-642-02959-2_13} also uses a 
+	syntactic relevance filtering technique but it 
+	selects from the ordered facts from the middle, 
+	instead of doing it from the top of the list; it
+	also uses an ordering technique based 
+	on latent semantics called APRILS (Automated Prophesier 
+	of Relevance Incorporating Latent Semantics).
 	
 \section{Sledgehammer}
 \label{sec:hammer}
@@ -259,26 +346,50 @@
 	to validate the query, that is, it determines that 
 	the negation of the conjecture is unsatisfiable, it 
 	produces a proof of unsatisfiability, which is checked 
-	SMTCoq to the trusted code base to the Coq kernel.
+	in Coq.
 	
-	SMTCoq deals with proof-producing solvers that are 
-	able to produce a resolution proof of unsatisfiability 
-	of the goal. This is essentially a proof tree that 
-	has at its leaves the input clauses and 
-	theory lemmas - clauses that are valid in a 
-	theory - and at its root, the empty clause which is 
-	the most basic notion of unsatisfiability. The 
-	resolution rule is applied to pairs of leaves/nodes 
-	of the tree to derive a new clause that is 
-	consistent with the inputs/lemmas, and is finally 
-	used to derive the empty clause. The leaves 
-	that consist of theory lemmas have sub-trees rooted 
-	at the leaf which represent the proof from the 
-	theory solver.
-	\textcolor{red}{Insert a figure with the resolution 
-	rule and a figure of the proof}
+	Since different SMT solvers produce resolution 
+	proofs of unsatisfiability in different formats, 
+	SMTCoq has its own input certificate format. 
+	The proofs from the different SMT solvers are 
+	translated to an SMTCoq certificate which 
+	can then be checked within Coq. Given an input 
+	query, the SMT solver first converts into CNF
+	(conjunction normal form) which is better 
+	suited for resolution proofs. The proof is a 
+	resolution proof which might consist of smaller proofs 
+	of theory lemmas from the theory solver. 
+	SMTCoq takes a modular approach of checking this proof.
+	The checker is divided into a main checker that 
+	delegates parts of the proof to small checkers. The proof 
+	is divided into steps that small checkers can check.
+	There is a small checker each for CNF conversion, 
+	resolution, and for each theory. The main checker divides the 
+	proof into steps, gives the step to the relevant small 
+	checker, and checks that in the end, the empty 
+	clause is deduced from the initial query. Each small 
+	checker operates independently and maintains an invariant
+	that allows the checking process to be split this way.
 	
-
+	Currently SMTCoq supports the SAT solvers zChaff and Glucose, 
+	and the SMT solvers CVC4 and veriT. 
+	
+	SMTCoq uses Coq's native arrays to store the clauses, 
+	a set of which represent the goal. The main checker 
+	handles this initial array of clauses representing the 
+	goal in CNF, and each small checker computes a 
+	clause that is implied from a subset of the clauses.
+	For efficiency, SMTCoq replaces the unnecessary 
+	clauses with new ones when it knows that they 
+	wont be useful anymore. After all the steps 
+	are handled by the small checkers, the main 
+	checker checks that the final implied clause is 
+	the empty clause.
+	
+	\textcolor{red}{Deep vs shallow embedding}\\
+	\textcolor{red}{Reification}\\
+	\textcolor{red}{Important lemmas - the one that equates the embeddings}\\
+	
 \section{Comparison}
 \label{sec:comp}
 	The most important difference between SMTCoq and Sledgehammer
@@ -315,9 +426,9 @@
 	effort, it does expand the trust-base to include the 
 	translator itself.
 	
-	\textcolor{red}{Say something about the logic translation 
-		Coq -> SMTLIB vs 
-		Isabelle/HOL -> SMTLIB.}
+	\textcolor{red}{Say something about the logic translation \\
+		Coq to SMTLIB vs \\
+		Isabelle/HOL to SMTLIB.}
 	
 	\textcolor{red}{premise selection?}
 	
