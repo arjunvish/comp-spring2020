@@ -120,8 +120,10 @@
 	method using the in-house Metis solver was more 
 	successful. 
 	
-\section{SMT-Solvers}
-\label{sec:smt}
+\section{Automatic Theorem Provers}
+\label{sec:atp}	
+\subsection{SMT-Solvers}
+\label{smt}
 	Boolean satisfiability, often called the SAT problem, 
 	is the problem of satisfying a Boolean formula, that is, 
 	consistently assigning values of $True$ or $False$ 
@@ -203,6 +205,80 @@
 	declarative rules with computable programs; veriT uses a rule-bases 
 	calculus defined in a SMTLIB like syntax; Z3 uses a rule based 
 	calculus with a relatively lower level of granularity. 
+	
+	\subsection{Superposition Provers}
+	\label{sup}
+	Superposition provers or resolution provers differ 
+	from SMT solvers in that they focus on proving 
+	conjectures rather than finding a satisfiable model
+	for a set of formulas. The problem is formulated 
+	as a set of axioms that relate to the problem space, 
+	a set assumptions and a conjecture to prove. 
+	The goal is to find the unsatisfiability of 
+	the negation of the conjecture along with the 
+	assumptions and the axioms, and this is done 
+	by refutation. The prover converts 
+	the input formulas into a set of clauses and 
+	uses the resolution principle and some other 
+	rules to add implied clauses to the input set of 
+	clauses - ultimately it tries to derive 
+	the empty clause or figure out that this 
+	isn't possible. 
+	
+	At the leaves are axioms or assumptions, and 
+	each node is obtained using one or more inference
+	rules applied on previous nodes/leaves. 
+	A proof trace is a DAG with the empty clause at
+	the root. The inference rules are sound and 
+	usually theoretically complete, but in practice 
+	this might be only true with infinite resources.
+	
+	Popular resolution provers like Vampire, E, and 
+	SPASS adhere to the TPTP (Thousands of Problems 
+	for Theorem Provers) input/output standard.
+	
+	The superposition calculus consists of 
+	the resolution rules and some additional 
+	rules that perform simplification modulo equality
+	and they apply these rules to the input set of 
+	clauses until saturation - that is until the 
+	resultant set of clauses is closed under the 
+	inference rules. To keep this system
+	theoretically complete, provers use an ordering 
+	on the terms. The saturation algorithm used 
+	by the prover guides the process of adding the 
+	next inference rule based on this simplification 
+	ordering of terms.
+	
+	Given $S$, the set of input clauses, the possible 
+	outcomes of a superposition prover are:
+	\begin{enumerate}
+		\item The empty clause is derived from $S$, and
+		$S$ is unsatisfiable.
+		\item The solver terminates without generating the 
+		empty clause, and $S$ is satisfiable.
+		\item The saturation algorithm doesn't terminate 
+		before the prover runs out of resources, and 
+		the empty clause isn't generated. In this 
+		case, the result is unknown. 
+	\end{enumerate}
+	
+	Since there may be redundance in the application 
+	of inference rules, and the generated clauses, 
+	many provers work on minimizing this redundance in 
+	interest of efficiency.
+	
+	Resolution provers deal with theories by 
+	adding an axiomatisation of the theory to the 
+	leaves of the DAG before running the 
+	saturation algorithm.
+	
+	While both SMT solvers and superposition provers 
+	produce resolution proofs, SMT solvers are guided 
+	by trying to find a satisfying model to an input 
+	problem whereas superposition provers try 
+	to prove the negation of conjecture to be unsatisfiable
+	with the remaining assertions in the problem. 
 	
 \section{Proof Assistants}
 \label{itp}
