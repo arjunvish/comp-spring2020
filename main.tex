@@ -301,71 +301,154 @@
 \section{Hammers}
 \label{gen-hammers}
 	Hammers use ATPs to automate the proving of goals within ITPs
-	that depend on certain other lemmas. 
+	that depend on certain other lemmas. A hammer is composed of 
+	a premise selector, which is a method to identify relevant 
+	premises that help prove a goal; a translator that bridges 
+	the gap between the logic of the ATP and that of the ITP; 
+	and a proof reconstructor that processes the ATPs proof
+	within the ITP.
 	
-	While queries to SMT solvers are contained within a single 
-	file, this isn't necessarily the case for ITPs. An SMT file
-	typically consists along with declarations and definitions 
-	of a set of assertions and a query that checks whether 
-	their conjunction is satisfiable or not. 
-	One can imagine a set of hypotheses 
-	$H_1, H_2, ..., H_n$ and a conjecture $G$, with a 
-	typical goal in an ITP that looks like $L$:
-	\begin{center}
-		$L : H_1 \to H_2 \to ... \to H_n \to G$.
-	\end{center}
-	Proving $L$ is equivalent to proving the unsatisfiability 
-	of $\neg L$.
-	\begin{align*}
-		\neg L &= \neg (H_1 \to H_2 \to ... \to H_n \to G)\\
-		&= \neg (\neg H_1 \lor \neg H_2 \lor ... \lor \neg H_n \neg G)
-		& \text{by unfolding }\to \\
-		&= \neg \neg H_1 \land \neg \neg H_2 \land ... \land \neg \neg H_n 
+	\subsection{Premise Selection}
+		While queries to SMT solvers are contained within a single 
+		file, this isn't necessarily the case for ITPs. An SMT file
+		typically consists along with declarations and definitions 
+		of a set of assertions and a query that checks whether 
+		their conjunction is satisfiable or not. 
+		One can imagine a set of hypotheses 
+		$H_1, H_2, ..., H_n$ and a conjecture $G$, with a 
+		typical goal in an ITP that looks like $L$:
+		\begin{center}
+			$L : H_1 \to H_2 \to ... \to H_n \to G$.
+		\end{center}
+		Proving $L$ is equivalent to proving the unsatisfiability 
+		of $\neg L$.
+		\begin{align*}
+			\neg L &= \neg (H_1 \to H_2 \to ... \to H_n \to G)\\
+			&= \neg (\neg H_1 \lor \neg H_2 \lor ... \lor \neg H_n \lor G)
+			& \text{by unfolding }\to \\
+			&= \neg \neg H_1 \land \neg \neg H_2 \land ... \land \neg \neg H_n 
 			\land \neg G
-		& \text{by De Morgan's law}\\
-		&= H_1 \land H_2 \land ... \land H_n \land \neg G
-		& \text{by double negation elimination}
-	\end{align*}
-	So the problem can equivalently be stated in the context of ATPs
-	as checking the unsatisfiability of a set of hypotheses 
-	along with the negation of the conjecture. This would look 
-	like the following SMT file:
-	\begin{verbatim}
-		assert H_1
-		assert H_2
-		...
-		assert H_n
-		assert G
-		check-sat
-	\end{verbatim}
-	However, goals in ITPs aren't necessarily self-contained 
-	as in $L$. The hypotheses needed to prove $G$ 
-	might have been proven earlier. In fact, ITPs have large
-	libraries of proven lemmas any of which might be potentially 
-	useful in proving a goal $G$. As such, picking
-	the hypotheses to send along with the negation of the 
-	goal to an ATP is challenging. This is called premise 
-	selection. The most basic form of premise selection 
-	is to allow for the user to find relevant facts 
-	to prove a conjecture. But given that these libraries 
-	have hundreds of lemmas, automatic methods to select 
-	premises is a more scalable and generalizable approach.
+			& \text{by De Morgan's law}\\
+			&= H_1 \land H_2 \land ... \land H_n \land \neg G
+			& \text{by double negation elimination}
+		\end{align*}
 	
-	The relevance filter by Meng and Paulson 
-	\cite{DBLP:journals/japll/MengP09}
-	for the Isabelle/HOL ITP selects relevant facts by 
-	giving priority to the number of symbols in common 
-	with the goal. The SInE (SUMO Inference Engine) 
-	\cite{10.1007/978-3-642-22438-6_23} does something 
-	similar in the ATP Vampire. The Divvy system 
-	\cite{10.1007/978-3-642-02959-2_13} also uses a 
-	syntactic relevance filtering technique but it 
-	selects from the ordered facts from the middle, 
-	instead of doing it from the top of the list; it
-	also uses an ordering technique based 
-	on latent semantics called APRILS (Automated Prophesier 
-	of Relevance Incorporating Latent Semantics).
+		So the problem can equivalently be stated in the context of ATPs
+		as checking the unsatisfiability of a set of hypotheses 
+		along with the negation of the conjecture. This would look 
+		like the following SMT file:
+		\begin{verbatim}
+			assert H_1
+			assert H_2
+			...
+			assert H_n
+			assert (not G)
+			check-sat
+		\end{verbatim}
+		However, goals in ITPs aren't necessarily self-contained 
+		as in $L$. The hypotheses needed to prove $G$ 
+		might have been proven earlier. In fact, ITPs have large
+		libraries of proven lemmas any of which might be potentially 
+		useful in proving a goal $G$. As such, picking
+		the hypotheses to send along with the negation of the 
+		goal to an ATP is challenging. This is called premise 
+		selection. The most basic form of premise selection 
+		is to allow for the user to find relevant facts 
+		to prove a conjecture. But given that these libraries 
+		have hundreds of lemmas, automatic methods to select 
+		premises is a more scalable and generalizable approach.
 	
+		Historically, premise selection was delegated to the 
+		user, but modern hammers have plenty of ways to 
+		automate this process. Some that use machine learning
+		to learn axiom selection from previously successful 
+		proofs using methods such as ones based on 
+		Bayesian statistics \cite{DBLP:journals/jar/AlamaHKTU14}, 
+		a nearest-neighbor ranking function 
+		\cite{DBLP:conf/cade/KaliszykU13a}, and non-linear 
+		kernel methods \cite{DBLP:journals/jar/AlamaHKTU14}.
+		Others use simpler algorithms; the relevance filter 
+		by Meng and Paulson 
+		\cite{DBLP:journals/japll/MengP09}
+		for the Isabelle/HOL ITP selects relevant facts by 
+		giving priority to the number of symbols in common 
+		with the goal. The SInE (SUMO Inference Engine) 
+		\cite{10.1007/978-3-642-22438-6_23} does something 
+		similar in the ATP Vampire. The Divvy system 
+		\cite{10.1007/978-3-642-02959-2_13} also uses a 
+		syntactic relevance filtering technique but it 
+		selects from the ordered facts from the middle, 
+		instead of doing it from the top of the list; it
+		also uses an ordering technique based 
+		on latent semantics called APRILS (Automated 
+		Prophesier of Relevance Incorporating Latent Semantics).
+		Others use semantics instead of syntax to guide
+		the selection process. For instance, the SRASS 
+		(Semantic Relevance Axiom Selection System) 
+		\cite{10.1007/978-3-540-73595-3_20} finds 
+		countermodels of the conjecture and selects axioms that
+		exclude the countermodels. Other research combined
+		these various types of methods to increase efficiency 
+		\cite{DBLP:journals/corr/KaliszykU13b, 
+			10.1007/978-3-642-31365-3_30}.
+		
+		\subsection{Translation}
+		ITPs allow for a more expressive higher-order logic 
+		with set-theoretic notation, whereas ATPs are mostly 
+		restricted to first-order logic. Thus, not all 
+		ITP problems are transferable to an ATP. However, 
+		there is a large enough subset of problems provable
+		by an ATP that can help an ITP user. When a goal is 
+		provable by an ATP, it needs to be soundly translated 
+		to its logic. The translation can involve various 
+		tricks to eliminate higher-order constructs
+		\cite{DBLP:journals/jar/MengP08} 
+		such as higher order quantification, partial 
+		function applications, and anonymous functions
+		from the goal, and an encoding of any 
+		type information where necessary. Resolution 
+		provers usually don't have 
+		in-built types, so a theory must be externally 
+		axiomatized within the ATP. With SMT solvers, there
+		maybe a stronger correspondence between some types and 
+		sorts. 
+	
+		\subsection{Proof Reconstruction}
+		Once the goal is translated to a problem understandable 
+		to the ATP, the result from the ATP needs to be 
+		soundly translated back to a valid ITP output.
+		As previously mentioned, the validity of a goal in 
+		the ITP corresponds to the unsatisfiability of its 
+		negation in the ATP. If it is satisfiable, this 
+		translates to a counterexample of the fact that 
+		the goal holds. Hammers sometimes use ATPs 
+		in this way to avoid wasting time proving 
+		unprovable goals. More interestingly, if the 
+		goal is found to be unsatisfiable in the ATP, 
+		the refutation proof of its unsatisfiability
+		needs to be consumed by the ITP. In its simplest form,
+		this pipeline consists of using the ATP as an oracle, 
+		that is to consider the goal to be proven in the 
+		ITP if the ATP concludes that its negation is 
+		unsatisfiable. This compromises the ITP's 
+		trustworthiness and adds to the the trust-base, 
+		the entire ATP.
+		
+		One way of doing this is to independently reconstruct 
+		the proof in the proof assistant once the ATP finds 
+		the goal to be unsatisfiable. In this case, the 
+		only information the ITP gets from the ATP is that 
+		the goal is provable given the premises. It does 
+		not care about how the ATP proved this conjecture.
+		Essentially, the ATP acts as a relevance filter for 
+		the prover inside the ITP. This is done, for instance, 
+		with Isabelle and the Metis prover 
+		\cite{10.1007/978-3-540-74591-4_18}. A more involved
+		integration involves using in addition to the premises
+		the proof steps used by the ATP, as in PRocH
+		\cite{10.1007/978-3-642-38574-2_18} that reconstructs 
+		TPTP proofs in HOL Light.
+		
 \section{Sledgehammer}
 \label{sec:hammer}
 	Isabelle is a proof assistant that allows for the formalizing of mathematical 
