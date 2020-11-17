@@ -219,11 +219,19 @@
 	assumptions and the axioms, and this is done 
 	by refutation. The prover converts 
 	the input formulas into a set of clauses and 
-	uses the resolution principle and some other 
-	rules to add implied clauses to the input set of 
+	uses a small set of inference rules to add 
+	implied clauses to the input set of 
 	clauses - ultimately it tries to derive 
 	the empty clause or figure out that this 
-	isn't possible. 
+	isn't possible. These provers are resolution-based -
+	the most important rule in the calculus is the 
+	\textit{resolution} rule. This has evolved into 
+	the \textit{paramodulation} rule to accommodate 
+	the notion of equality, and ultimately into 
+	the \textit{superposition} rules that take into 
+	consideration, along with equality, an ordering 
+	on the terms in the clauses to reduce the number 
+	of rule applications.
 	
 	At the leaves are axioms or assumptions, and 
 	each node is obtained using one or more inference
@@ -237,14 +245,12 @@
 	SPASS adhere to the TPTP (Thousands of Problems 
 	for Theorem Provers) input/output standard.
 	
-	The superposition calculus consists of 
-	the resolution rules and some additional 
-	rules that perform simplification modulo equality
-	and they apply these rules to the input set of 
+	The superposition prover applies the inference 
+	rules to the input set of 
 	clauses until saturation - that is until the 
 	resultant set of clauses is closed under the 
 	inference rules. To keep this system
-	theoretically complete, provers use an ordering 
+	efficient, provers use an ordering 
 	on the terms. The saturation algorithm used 
 	by the prover guides the process of adding the 
 	next inference rule based on this simplification 
@@ -279,6 +285,15 @@
 	problem whereas superposition provers try 
 	to prove the negation of conjecture to be unsatisfiable
 	with the remaining assertions in the problem. 
+	
+	Additionally, theories are built-in for SMT solvers,
+	while they need to be externally axiomatized for 
+	resolution provers. As such, superposition provers
+	are better suited for quantified formulas and 
+	minimal theory reasoning, whereas SMT solvers 
+	do well on problems that contain constraints 
+	in theories and quantified formulas slow them 
+	down.
 	
 \section{Proof Assistants}
 \label{itp}
