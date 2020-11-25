@@ -8,7 +8,7 @@
 \usepackage{mathtools}
 
 \begin{document}
-\title{SMT Solvers and Proof Assistants}
+\title{Automatic Theorem Provers and Interactive Theorem Provers}
 \author{Arjun Viswanathan}
 \date{}
 \maketitle
@@ -28,7 +28,7 @@
 	are tools that were born from this research, that have different 
 	approaches to this problem. This work aims to 
 	comprehensively study these different tools 
-	from the point of view of using SMT solvers as
+	with a focus on using SMT solvers as
 	the ATPs enhancing automation in ITPs.
 \end{abstract}
 
@@ -53,26 +53,24 @@
 	of logical formulas. Interaction between the user and the 
 	ATP is kept to a minimum; ideally, the user would provide a 
 	theorem to the ATP and the ATP either proves it or comes up
-	with a counter-example that disproves it. For this work, we 
-	will look at a particular sub-category of ATPs called 
-	satisfiability modulo theories (SMT)-solvers. SMT solvers 
-	input formulas in first order logic with equality and 
-	other background theories such as (integer, real, and 
-	machine integer) arithmetic, arrays, etc. and determine
-	whether the formula is satisfiable or not. Depending 
-	on the theory, and whether quantification
-	is enabled, the SMT-solver could also fail to answer the query. 
-	This satisfiability problem is the dual of the 
-	validity problem (proving a formula to be valid) - a 
-	formula can be proved to be valid by establishing that 
-	its negation is unsatisfiable. We focus only on 
-	quantifier-free fragments of the logic, which is in keeping 
-	with the present state-of-the-art. Although ATPs can also 
-	refer to superposition provers such as Vampire and SPASS, 
-	which have also been successfully used to provide 
-	automation to ITPs, the focus here is on leveraging 
-	SMT-solvers in ITPs.
+	with a counter-example that disproves it. ATPs are broadly divided into satisfiability modulo theories 
+	(SMT)-solvers and superposition provers. Although both 
+	of these have different approaches to proving, they 
+	both look at a formula in terms of whether it is 
+	unsatisfiable or not. The satisfiability problem 
+	is the dual of the validity problem (proving a 
+	formula to be valid) - a formula can be proved to be 
+	valid by establishing that its negation is 
+	unsatisfiable.
 	
+	\begin{figure}[t]
+		\centering
+		\includegraphics[scale=0.5]{coq.pdf}
+		\caption{Comparing Interactive Theorem Provers (ITPs)
+		and Automatic Theorem Provers (ATPs)}
+		\label{fig:graph}
+	\end{figure}
+
 	ATPs and ITPs clearly have different modes of operations
 	and offer distinct advantages - ITPs certify their 
 	results with a high degree of trustworthiness although 
@@ -81,8 +79,14 @@
 	while not giving the same kind of guarantees that ITPs do.
 	A natural research question is whether we can get the best 
 	of both worlds - reliable proofs with maximum automation. 
-	\textcolor{red}{Generalize?}
-	In this work, we compare Sledgehammer and SMTCoq, 
+	In this work, we study various tools that 
+	attempt to combine these tools. We conclude with a 
+	more comprehensive study of two state-of-the-art
+	integrations of SMT solvers with proof assistants -
+	the \textit{smt} tactic in Sledgehammer and 
+	SMTCoq. Both these tools use SMT solvers to 
+	automate proofs in ITPs, but approach the 
+	problem very differently. 
 	two tools that take different approaches 
 	to this goal. A hammer helps an ITP prove lemmas by using 
 	an ATP to guide its proof search, and Sledgehammer is
@@ -94,10 +98,6 @@
 	inside the ITP. SMTCoq is a certified checker 
 	for the Coq proof assistant that uses SAT and SMT solvers
 	for automation.
-	
-	\textcolor{red}{Insert an image of a graph with SMT solvers
-	on one axis and proof assistants on the other, with
-	Sledgehammer and SMTCoq in the middle}
 
 	\textcolor{red}{Give a preview of the rest of the paper here}
 
@@ -297,6 +297,20 @@
 	
 \section{Proof Assistants}
 \label{itp}
+	Most modern proof assistants or interactive 
+	theorem provers (ITPs) are modeled after 
+	the Logic for Computable Functions (LCF) theorem
+	prover \cite{10.5555/891954}, which is designed 
+	in the logic with the same name
+	\cite{Loeckx1987}. LCF-style theorem provers are 
+	based on a small inference kernel, where theorems 
+	are implemented as an abstract datatype, and 
+	new theorems can only be constructed through a 
+	fixed set of functions, that correspond to the 
+	underlying logic's axiom schemata and inference 
+	rules, provided by this datatype. This keeps
+	the trusted codebase to a minimum, and 
+	provides strong soundness guarantees.
 	
 \section{Hammers}
 \label{gen-hammers}
@@ -462,7 +476,24 @@
 	used by Sledgehammer can be classified as resolution 
 	provers and SMT-solvers. This section expands on the work 
 	done to integrate SMT-solvers with Isabelle/HOL via 
-	Sledgehammer.
+	Sledgehammer. Sledgehammer provides the \textit{smt}
+	tactic to utilize this feature.
+	
+	This integration, like other hammer integrations, 
+	consists of a premise selection phase, a translation 
+	from Isabelle's higher-order logic to the SMT solvers'
+	first-rder logic, and the reconstruction of proofs found by the SMT solver with inference rules of Isabelle/HOL. 
+	Reconstruction involves either passing the minimal 
+	amount of facts needed to prove the goal by the 
+	external solver to metis, Sledgehammer's internal 
+	prover; or, sledgehammer can construct the proof 
+	from the external prover, inference by inference.
+	The solvers available to Sledgehammer are Z3, Yices, 
+	and CVC3. Yices and CVC3 are trusted as oracles.
+	Trusting SMT solvers isn't a dependable 
+	technique for previously mentioned reasons. The 
+	integration with Z3 involves proof production by 
+	Z3 and reconstruction of these proofs in Isabelle.
 	
 	When a user wishes to find a proof for a conjecture using 
 	Sledgehammer, it first picks a few hundred relevant 
@@ -492,8 +523,7 @@
 	with any user supplied facts to the SMT solvers 
 	using a translation similar to those of the ATPs 
 	and then either reconstructs or trusts the SMT solvers
-	results. Trusting SMT solvers isn't a dependable 
-	technique for previously mentioned reasons. The integration
+	results.  The integration
 	with Z3, though successful, wasn't highly used. 
 	\textcolor{red}{Mention the results here} The developers
 	improved upon this by loosening the integration of 
