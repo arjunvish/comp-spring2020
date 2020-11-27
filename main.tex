@@ -6,6 +6,7 @@
 \usepackage{framed}
 \usepackage{amsmath, amsfonts, amssymb}
 \usepackage{mathtools}
+\usepackage{cleveref}
 
 \begin{document}
 \title{Automatic Theorem Provers and Interactive Theorem Provers}
@@ -189,9 +190,9 @@
 	is no way to satisfy the empty clause.
 	
 	\begin{center}
-		$\infer[resolution]{\phi_1 \lor ... \lor \phi_n \lor 
+		$\infer[resolution]{\varphi_1 \lor ... \lor \varphi_n \lor 
 			\psi_1 \lor ... \lor \psi_m}
-		{\phi_1 \lor ... \lor \phi_n \lor \chi & \neg \chi 
+		{\varphi_1 \lor ... \lor \varphi_n \lor \chi & \neg \chi 
 			\lor \psi_1 \lor ... \lor \psi_m}$ 
 	\end{center}
 	For instance,
@@ -476,7 +477,23 @@
 	Sledgehammer is a component of Isabelle/HOL that uses 
 	external ATPs to guide Isabelle/HOL's proving. The ATPs 
 	used by Sledgehammer can be classified as resolution 
-	provers and SMT-solvers. This section expands on the work 
+	provers and SMT-solvers. When a user wishes to 
+	find a proof for a conjecture using Sledgehammer, 
+	the tool picks a few hundred relevant 
+	lemmas from Isabelle's libraries and sends them along 
+	with the conjecture to the ATP. The conjecture is 
+	translated from Isabelle's polymorphic higher-order 
+	logic to the ATP's first order logic. Sledgehammer 
+	runs this query parallelly by invoking all available 
+	ATPs. If the ATP is able to prove the conjecture, 
+	Isabelle's own prover metis sets out to reconstruct 
+	this proof. Essentially, the role of the 
+	ATP in this integration is to filter out relevant 
+	facts for metis to efficiently work with and 
+	also to eliminate disprovable sub-goals from 
+	metis's search space.
+	
+	In the rest of this section, we expands on the work 
 	done to integrate SMT-solvers with Isabelle/HOL via 
 	Sledgehammer. Sledgehammer provides the \textit{smt}
 	tactic to utilize this feature.
@@ -565,7 +582,7 @@
 		argument $t_{m+1}$ as 
 		$app\ (c\ t_1 ... t_m)\ t_{m+1}$.
 		
-		The translation is an improvement to the 
+		The translation is an improvement of the 
 		translation used by Sledgehammer for 
 		superposition provers, because 
 		(monomorphic) types are embedded in 
@@ -579,51 +596,181 @@
 		resolution provers on many trivial and 
 		non-trivial problems.
 		
-	When a user wishes to find a proof for a conjecture using 
-	Sledgehammer, it first picks a few hundred relevant 
-	lemmas from Isabelle's libraries and sends them along 
-	with the conjecture to the ATP. The conjecture is 
-	translated from Isabelle's polymorphic higher-order 
-	logic to the ATP's first order logic. Sledgehammer 
-	runs this query parallelly by invoking all available 
-	ATPs. If the ATP is able to prove the conjecture, 
-	Isabelle's own prover metis sets out to reconstruct 
-	this proof. So essentially, the ATP just tells Isabelle 
-	when it doesn't need to bother proving a conjecture at 
-	all. \textcolor{red}{I'm thinking of a use case here: 
-	when I try to use the ITP and I have a subgoal, and I 
-	call Sledgehammer and it tells me its not provable, 
-	thanks to the ATP, do I just quit? Check out the usage.}
-	Additionally, metis also minimizes the proof because 
-	the ATPs could have needed many more lemmas than necessary.
-	
-	Sledgehammer has two different methods of integration 
-	with SMT-solvers. The first is through an smt proof 
-	method in Isabelle that relies on three SMT solvers - 
-	it trusts CVC3 and Yices as oracles while performing 
-	a step-by-step proof reconstruction of Z3 proofs. 
-	\textcolor{red}{Say more about the Z3 stuff here.}
-	Sledgehammer sends the conjecture to prove along 
-	with any user supplied facts to the SMT solvers 
-	using a translation similar to those of the ATPs 
-	and then either reconstructs or trusts the SMT solvers
-	results.  The integration
-	with Z3, though successful, wasn't highly used. 
-	\textcolor{red}{Mention the results here} The developers
-	improved upon this by loosening the integration of 
-	Sledgehammer with SMT solvers in their next attempt.
-	
-	Sledgehammer reuses the architecture for the ATPs 
-	in its second attempt at leveraging SMT solvers. 
-	After relevance filtering of facts and translation to 
-	first order logic, if the SMT solver is able to
-	prove a conjecture, Sledgehammer tries to completely
-	reconstruct the proof locally using metis. If metis fails,
-	it then tries to reconstruct the proof step-by-step using 
-	the smt method. metis cannot handle theories other 
-	than equality so it does have to rely on the smt proof
-	method for those.
-	
+	\subsection{The Z3 Proof System}
+		Z3's proof system is a natural deduction 
+		calculus that uses 38 proof rules. Some of 
+		these rules are presented in \textcolor{red}{Fig}
+		using sequents $\Gamma \models \varphi$ where 
+		$\Gamma$ is a set of formulas called the hypotheses
+		and $\varphi$ is a formula called the proposition. 
+		A rule consists of one or more sequents as 
+		premises and a sequent as the conclusion. A 
+		proof tree consists of axioms from the 
+		proof system as leaves, and application of 
+		rules as nodes, and since proof trees 
+		document unsatisfiability of the input 
+		formulas, the root of the tree concludes the 
+		empty clause $\bot$, which is represented by 
+		the sequent $\Pi^\prime \models \bot$ where 
+		$\Pi^\prime$ is the \textit{unsat core} - 
+		a subset of the assertions $\Pi$
+		initially given to Z3 to be shown unsatisfiable.
+		
+		\begin{figure}[t]
+			\begin{equation*}
+				\infer[\texttt{true}]
+					{\models \top}
+					{}
+				\ \ \ \ \ 
+				\infer[\texttt{asserted}]
+					{\{\varphi\} \models \varphi}
+					{\varphi \in \Pi}
+				\ \ \ \ \ 
+			\end{equation*}
+			
+			\caption{Simple Z3 proof rules.}
+			\label{fig:z3-rules}
+		\end{figure}
+		A representative subset of the proof rules are 
+		documented in~\cite{DBLP:phd/dnb/Bohme12} and 
+		some of them are repeated here to illustrate 
+		the workings of the Z3 proof system. In addition
+		to the simple rules from \textcolor{red}{Fig},
+		resolution is a rule that's central to the 
+		proof calculus. Resolution was introduced in 
+		\Cref{smt} and is a special case of it 
+		called unit resolution is represented as follows in 
+		the sequent calculus of Z3, where 
+		$I = \{1,...,n\}$ and $J$ is a non-empty 
+		subset of $I$ :\\
+		\begin{equation*}
+			\infer[\texttt{unit-resolution}]
+				{\Gamma \cup \bigcup\limits_{j \in J}\Gamma_j \models \bigvee\limits_{i \in I\setminus J} l_i}
+				{\Gamma \models \bigvee\limits_{i \in I}l_i & \langle \Gamma_j \models \neg l_j \rangle_{j \in J}}
+		\end{equation*}
+		
+		Additionally, Z3 has a set of rules for converting 
+		input formulas into equisatisfiable formulas in 
+		conjunctive normal form (CNF) with polynomial 
+		complexity, based on Tseitin's CNF conversion 
+		method~\cite{Tseitin1983}. Tseitin's method 
+		introduces auxiliary variables and constraints 
+		asserting their equivalence with sub-formulas 
+		that aren't in CNF, until the entire formula 
+		is in CNF. Z3 runs this algorithm lazily and 
+		optimizes it to avoid introducing too many 
+		new vriables. 
+		
+		The main rule for reasoning about equality 
+		is the \textit{congruence} rule:
+		\begin{equation*}
+			\infer[\texttt{cong}]
+				{\bigcup\limits_{j\in J}\Gamma_j \models f(t_1, ..., t_n) \simeq f(t_1^{\prime},...,t_n^{\prime})}
+				{\langle \Gamma_j \models t_j \simeq t_j^{\prime} \rangle_{j \in J} & 
+				\langle t_i \equiv t_i^{\prime} \rangle_{i \in I\setminus J}}
+		\end{equation*}
+		Equality ($=$), equivalence ($\iff$), and 
+		equisatisfiability ($\sim$) are congruence 
+		relations, and $\simeq$ represents any one 
+		of these relations. $I$ and $J$ are defined 
+		as above for resolution.
+		
+		Z3 is also proof producing for quantified formulas.
+		$Q$ represents either of the two quantifiers - 
+		the universal quantifier $\forall$ or the 
+		existential quantifier $\exists$ - and 
+		$\overline{x}$ represents a lost of variables 
+		$x_1,...,x_n$. The following 
+		proof rule allows introduction of quantifiers:
+		\begin{equation*}
+			\infer[\texttt{intro$_Q$}]
+			{\Gamma \models (Q \overline{x}.\varphi_1 [ \overline{x}]) \sim (Q \overline{x}.\varphi_2 [ \overline{x}])}
+			{\Gamma \models \varphi_1 [\overline{x}] \sim \varphi_2 [\overline{x}]}
+		\end{equation*}
+		The universal quantifier can be eliminated by 
+		instantiation and an existential quantifiers 
+		can be eliminated using skolemization.
+		\begin{equation*}
+		\infer[\texttt{inst$_\forall$}]
+			{\neg(\forall\overline{x}.\varphi[\overline{x}])
+			\lor \varphi[\overline{x} \mapsto \overline{t}]}
+			{}
+		\end{equation*}
+		Skolemization~\cite{NONNENGART2001335} is the process 
+		of removing existential quantifiers from formulas using 
+		constants called Skolem constants as witnesses.
+		\begin{equation*}
+		\infer[\texttt{sk$_\exists$}]
+			{(\exists\overline{x}.\varphi[\overline{y},\overline{x}]) 
+			\sim \varphi[\overline{y},\overline{f}(\overline{y})]}
+			{}\ \ \ \ 
+		\infer[\texttt{sk$_\forall$}]
+		{(\neg\forall\overline{x}.\varphi[\overline{y},\overline{x}]) 
+			\sim (\neg \varphi[\overline{y},\overline{f}(\overline{y})])}
+		{}	
+		\end{equation*}
+		
+		A formula is in negation normal form (NNF) if 
+		negations are applied only to variables and 
+		the only Boolean operators in it are conjunction 
+		and disjunction. Z3 has a set of rules for 
+		translation of formulas to NNF in linear time.
+		\textcolor{red}{Why?}
+		
+		Besides these, Z3 provides theory rules, 
+		that conclude disjunctions of theory literals 
+		called theory lemmas, for theory specific reasoning
+		and rewriting rules. Rewriting is an important 
+		part of SMT solvers - this process takes 
+		care of various simplifications and 
+		transformations to canonical forms. Z3 
+		provides a set of metatheorems that are 
+		rewriting patterns that may repeatedly 
+		occur such as symmetry of equality, common 
+		propositional tautologies, etc. Sledgehammer
+		allows users to add rules to the set of 
+		metatheorems. If one of Z3's rewrite rules 
+		fails to be reconstructed in Sledgehammer, 
+		the user can add a metatheorem that 
+		matches the pattern to fix the failure.
+		
+	\subsection{Proof Reconstruction}
+		The \textit{smt} tactic trusts the Yices 
+		and CVC3 solvers, so only proofs produced 
+		by Z3 are reconstructed in Isabelle.
+		The Z3 proofs are reconstructed step-by-step,
+		and currently supported theories are equality, 
+		linear arithmetic, and bit-vector arithmetic.
+		Since Z3's FOL is a subset of Isabelle's HOL,
+		formulas in Z3 proofs are easily representable 
+		as terms in Isabelle/HOL. The Z3 proof tree
+		is scanned in depth-first post-order, starting 
+		from the root node, and reconstructed in Isabelle,
+		step-by-step. Each proof node, contains information 
+		such as rule name, references to premises and 
+		propositions, and is represented as an 
+		algebraic datatype with a unique ID assigned
+		by Z3. Sledgehammer stores these in a balanced 
+		tree with logarithmic lookup using the IDs as
+		keys. Reconstruction of a proof node 
+		represents a proven Isabelle/HOL theorem of 
+		the node's conclusion. Once reconstructed, a 
+		proof node can be reused by Sledgehammer.
+		If $\Pi$ is the set of asserted formulas, 
+		$\Pi^\prime$ represents the unsat core returned 
+		by Z3 - the minimal subset of $\Pi$ required 
+		to prove the problem unsat. After reconstructing
+		the root node, Sledgehammer checks the rest of
+		the tree to see that only the formulas from 
+		$\Pi^\prime$ remain as leaves.
+		
+		Proof reconstruction is sound by construction 
+		and doesn't extend the trusted code base
+		beyond Isabelle's LCF kernel, but incomplete. 
+		In fact, this integration discovered soundness
+		bugs in Z3 that were subsequently fixed by the 
+		developers.
+		
 \section{SMTCoq}
 \label{sec:cert}
 	SMTCoq is a Coq plugin that uses SAT and SMT solvers to 
