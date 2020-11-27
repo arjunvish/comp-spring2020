@@ -121,6 +121,7 @@
 	method using the in-house Metis solver was more 
 	successful. \\
 	\textcolor{red}{Related work from Page 35 of Bohme's thesis}\\
+	\textcolor{red}{Related work from Page 59 of Bohme's thesis}\\
 	
 \section{Automatic Theorem Provers}
 \label{sec:atp}	
@@ -599,8 +600,8 @@
 	\subsection{The Z3 Proof System}
 		Z3's proof system is a natural deduction 
 		calculus that uses 38 proof rules. Some of 
-		these rules are presented in \textcolor{red}{Fig}
-		using sequents $\Gamma \models \varphi$ where 
+		these rules are presented in \Cref{fig:z3-rules}
+		using sequents $\Gamma \vdash \varphi$ where 
 		$\Gamma$ is a set of formulas called the hypotheses
 		and $\varphi$ is a formula called the proposition. 
 		A rule consists of one or more sequents as 
@@ -611,7 +612,7 @@
 		document unsatisfiability of the input 
 		formulas, the root of the tree concludes the 
 		empty clause $\bot$, which is represented by 
-		the sequent $\Pi^\prime \models \bot$ where 
+		the sequent $\Pi^\prime \vdash \bot$ where 
 		$\Pi^\prime$ is the \textit{unsat core} - 
 		a subset of the assertions $\Pi$
 		initially given to Z3 to be shown unsatisfiable.
@@ -619,15 +620,68 @@
 		\begin{figure}[t]
 			\begin{equation*}
 				\infer[\texttt{true}]
-					{\models \top}
+					{\vdash \top}
 					{}
 				\ \ \ \ \ 
 				\infer[\texttt{asserted}]
-					{\{\varphi\} \models \varphi}
+					{\{\varphi\} \vdash \varphi}
 					{\varphi \in \Pi}
 				\ \ \ \ \ 
+				\infer[\texttt{mp}]
+					{\Gamma_1 \cup \Gamma_2 \vdash \varphi_2}
+					{\Gamma_1 \vdash \varphi_1 & 
+					\Gamma_2 \vdash \varphi_1 \to \varphi_2}
 			\end{equation*}
-			
+			\begin{equation*}
+				\infer[\texttt{hypothesis}]
+				{\{\varphi\} \vdash \varphi}
+				{}
+				\ \ \ \ \ 
+				\infer[\texttt{lemma}]
+					{\Gamma \cup \{l_1,...,l_n\} \vdash \bot}
+					{\Gamma \setminus \{l_1,...,l_n\} 
+						\vdash \neg l_1 \lor ... \lor \neg l_n}
+			\end{equation*}
+			\begin{equation*}
+				\infer[\texttt{iff$_\top$}]
+					{\Gamma \vdash \varphi \leftrightarrow \top}
+					{\Gamma \vdash \varphi}
+				\ \ \ 
+				\infer[\texttt{iff$_\bot$}]
+					{\Gamma \vdash \varphi \leftrightarrow \bot}
+					{\Gamma \vdash \neg \varphi}
+				\ \ \ 
+				\infer[\texttt{iff$_\sim$}]
+					{\Gamma \vdash \varphi_1 \sim \varphi_2}
+					{\Gamma \vdash \varphi_1 \leftrightarrow \varphi_2}
+				\ \ \ 
+				\infer[\texttt{refl$_\simeq$}]
+					{\vdash t \simeq t}
+					{}
+			\end{equation*}
+			\begin{equation*}
+			\infer[\texttt{elim$_\land$}]
+				{\Gamma \vdash l_i}
+				{\Gamma \vdash l_1 \land ... \land l_n}
+			\ \ \ 
+			\infer[\texttt{elim$_\neg\lor$}]
+				{\Gamma \vdash \neg l_i}
+				{\Gamma \vdash \neg (l_1 \lor ... \lor l_n)}
+			\ \ \ 
+			\infer[\texttt{symm$_\simeq$}]
+				{\Gamma \vdash t_2 \simeq t_1}
+				{\Gamma \vdash t_1 \simeq t_2}
+			\end{equation*}
+			\begin{equation*}
+				\infer[\texttt{trans$_\simeq$}]
+					{\Gamma_1 \cup \Gamma_2 \vdash t_1 \simeq t_3}
+					{\Gamma_1 \vdash t_1 \simeq t_2 & 
+				 	\Gamma_2 \vdash t_2 \simeq t_3}
+			 	\ \ \ \ \ 
+			 	\infer[\texttt{comm$_\simeq,\approx$}]
+			 		{\Gamma \vdash (t_2 \approx t_1) \simeq (t_2^{\prime} \approx t_1^{\prime})}
+			 		{\Gamma \vdash (t_1 \approx t_2) \simeq (t_1^{\prime} \approx t_2^{\prime})}
+			\end{equation*}
 			\caption{Simple Z3 proof rules.}
 			\label{fig:z3-rules}
 		\end{figure}
@@ -635,7 +689,7 @@
 		documented in~\cite{DBLP:phd/dnb/Bohme12} and 
 		some of them are repeated here to illustrate 
 		the workings of the Z3 proof system. In addition
-		to the simple rules from \textcolor{red}{Fig},
+		to the simple rules from \Cref{fig:z3-rules},
 		resolution is a rule that's central to the 
 		proof calculus. Resolution was introduced in 
 		\Cref{smt} and is a special case of it 
@@ -645,8 +699,8 @@
 		subset of $I$ :\\
 		\begin{equation*}
 			\infer[\texttt{unit-resolution}]
-				{\Gamma \cup \bigcup\limits_{j \in J}\Gamma_j \models \bigvee\limits_{i \in I\setminus J} l_i}
-				{\Gamma \models \bigvee\limits_{i \in I}l_i & \langle \Gamma_j \models \neg l_j \rangle_{j \in J}}
+				{\Gamma \cup \bigcup\limits_{j \in J}\Gamma_j \vdash \bigvee\limits_{i \in I\setminus J} l_i}
+				{\Gamma \vdash \bigvee\limits_{i \in I}l_i & \langle \Gamma_j \vdash \neg l_j \rangle_{j \in J}}
 		\end{equation*}
 		
 		Additionally, Z3 has a set of rules for converting 
@@ -665,8 +719,8 @@
 		is the \textit{congruence} rule:
 		\begin{equation*}
 			\infer[\texttt{cong}]
-				{\bigcup\limits_{j\in J}\Gamma_j \models f(t_1, ..., t_n) \simeq f(t_1^{\prime},...,t_n^{\prime})}
-				{\langle \Gamma_j \models t_j \simeq t_j^{\prime} \rangle_{j \in J} & 
+				{\bigcup\limits_{j\in J}\Gamma_j \vdash f(t_1, ..., t_n) \simeq f(t_1^{\prime},...,t_n^{\prime})}
+				{\langle \Gamma_j \vdash t_j \simeq t_j^{\prime} \rangle_{j \in J} & 
 				\langle t_i \equiv t_i^{\prime} \rangle_{i \in I\setminus J}}
 		\end{equation*}
 		Equality ($=$), equivalence ($\iff$), and 
@@ -684,8 +738,8 @@
 		proof rule allows introduction of quantifiers:
 		\begin{equation*}
 			\infer[\texttt{intro$_Q$}]
-			{\Gamma \models (Q \overline{x}.\varphi_1 [ \overline{x}]) \sim (Q \overline{x}.\varphi_2 [ \overline{x}])}
-			{\Gamma \models \varphi_1 [\overline{x}] \sim \varphi_2 [\overline{x}]}
+			{\Gamma \vdash (Q \overline{x}.\varphi_1 [ \overline{x}]) \sim (Q \overline{x}.\varphi_2 [ \overline{x}])}
+			{\Gamma \vdash \varphi_1 [\overline{x}] \sim \varphi_2 [\overline{x}]}
 		\end{equation*}
 		The universal quantifier can be eliminated by 
 		instantiation and an existential quantifiers 
