@@ -99,7 +99,20 @@
 	inside the ITP. SMTCoq is a certified checker 
 	for the Coq proof assistant that uses SAT and SMT solvers
 	for automation.
-
+	
+	After specifying the notation used in the rest of the 
+	paper and discussing some tools in the area that 
+	we don't go deep into here, we describe SMT solvers
+	and superposition provers in \Cref{sec:atp}.
+	\Cref{sec:itp} explores the state-of-the-art 
+	of ITPs. \Cref{sec:hammer} and \Cref{sec:sledgehammer}
+	explore hammers in general, and Sledgehammer's
+	integration with SMT solvers in particular. In
+	\Cref{sec:cert}, we look at SMTCoq, a tool that 
+	takes a different approach to automating ITPs
+	using SAT and SMT solvers. Finally, we compare 
+	the 2 approaches in ~\Cref{sec:conc} and discuss
+	our plans to take this research forward.
 	\textcolor{red}{Give a preview of the rest of the paper here}
 
 \section{Formal Preliminaries}
@@ -164,8 +177,8 @@
 	program synthesis~\cite{synth}, static analysis, 
 	and interpolant generation~\cite{DBLP:journals/corr/abs-1111-5652}.
 	
-	Due to the recent emphasis on verifying results from SMT-solvers,
-	\textcolor{red}{Find a citation}
+	Due to the recent emphasis on verifying results from SMT-solvers~\cite{10.1145/1670412.1670413,
+	mansur2020detecting, 10.1007/978-3-642-38916-0_3},
 	many SMT-solvers are proof producing. When an SMT-solver finds 
 	that a formula is satisfiable, an easily checkable proof of this is 
 	a satisfying model of the formula. However, when a solver 
@@ -180,8 +193,9 @@
 	on resolution. Specifically, a proof of unsatisfiability 
 	of a formula in CNF, is a tree with the input 
 	clauses and theory lemmas at the leaves, and the empty 
-	clause at the root. The resolution takes two clauses, 
-	a pivot element that occurs with opposite polarities 
+	clause at the root. The resolution rule 
+	takes two clauses, a pivot element that occurs 
+	with opposite polarities 
 	in each of the clauses, and gives one clause that is 
 	a consequent of the premises. The idea is that, beginning 
 	with the input clauses and the theory lemmas (which might 
@@ -200,7 +214,25 @@
 	\begin{center}
 		$\infer{a \lor c}{a \lor \neg b & b \lor c}$
 	\end{center}
-	\textcolor{red}{Insert a figure of the proof}
+	
+	\begin{figure}[t]
+		\fbox{\includegraphics[scale=0.5]{prooftree.pdf}}
+		\caption{A proof tree of unsatisfiability.}
+		\label{fig:tree}
+	\end{figure}
+
+	The proof calculus for an SMT solver consists 
+	of proof rules such as resolution and a 
+	proof of unsatisfiability is a proof tree with 
+	the assertions asserted in the problem as 
+	leaves, as illustrated in \Cref{fig:tree}.
+	Additionally, clauses asserted to 
+	be true by a theory solver - called theory lemmas 
+	- can also be leaves. These are usually 
+	justified by the theory solver, possibly by 
+	a tree rooted at the lemma. Each node in 
+	the tree is an application of a proof rule, 
+	and the root concludes the empty clause $\bot$.
 	
 	Even though the calculus is common among the SMT-solvers, 
 	it hasn't been standardized. CVC4 uses a proof language called
@@ -299,7 +331,7 @@
 	down.
 	
 \section{Proof Assistants}
-\label{itp}
+\label{sec:itp}
 	Most modern proof assistants or interactive 
 	theorem provers (ITPs) are modeled after 
 	the Logic for Computable Functions (LCF) theorem
@@ -316,7 +348,7 @@
 	provides strong soundness guarantees.
 	
 \section{Hammers}
-\label{gen-hammers}
+\label{sec:hammer}
 	Hammers use ATPs to automate the proving of goals within ITPs
 	that depend on certain other lemmas. A hammer is composed of 
 	a premise selector, which is a method to identify relevant 
@@ -468,7 +500,7 @@
 		TPTP proofs in HOL Light.
 		
 \section{Sledgehammer}
-\label{sec:hammer}
+\label{sec:sledgehammer}
 	Isabelle is a proof assistant that allows for the formalizing of mathematical 
 	formulas. Isabelle/HOL is an instance of Isabelle that 
 	provides an expressive HOL to prove theorems 
@@ -713,7 +745,14 @@
 		that aren't in CNF, until the entire formula 
 		is in CNF. Z3 runs this algorithm lazily and 
 		optimizes it to avoid introducing too many 
-		new vriables. 
+		new vriables. A formula is in negation normal 
+		form (NNF) if negations are applied only to
+		variables and the only Boolean operators 
+		in it are conjunction and disjunction. 
+		NNF is an intermediate step in the CNF 
+		conversion process when quantifiers are 
+		involved and Z3 has a set of rules for 
+		translation of formulas to NNF in linear time.
 		
 		The main rule for reasoning about equality 
 		is the \textit{congruence} rule:
@@ -763,13 +802,6 @@
 			\sim (\neg \varphi[\overline{y},\overline{f}(\overline{y})])}
 		{}	
 		\end{equation*}
-		
-		A formula is in negation normal form (NNF) if 
-		negations are applied only to variables and 
-		the only Boolean operators in it are conjunction 
-		and disjunction. Z3 has a set of rules for 
-		translation of formulas to NNF in linear time.
-		\textcolor{red}{Why?}
 		
 		Besides these, Z3 provides theory rules, 
 		that conclude disjunctions of theory literals 
