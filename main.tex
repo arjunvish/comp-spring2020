@@ -501,11 +501,12 @@
 		
 \section{Sledgehammer}
 \label{sec:sledgehammer}
-	Isabelle is a proof assistant that allows for the formalizing of mathematical 
-	formulas. Isabelle/HOL is an instance of Isabelle that 
-	provides an expressive HOL to prove theorems 
-	in its proof language Isar, and also consists of a large 
-	library of formally verified mathematics. 
+	Isabelle is a proof assistant that used to 
+	formalize of mathematical formulas. Isabelle/HOL 
+	is an instance of Isabelle that provides an expressive 
+	HOL to prove theorems in its proof language Isar, 
+	and also consists of a large library of formally 
+	verified mathematics. 
 	
 	Sledgehammer is a component of Isabelle/HOL that uses 
 	external ATPs to guide Isabelle/HOL's proving. The ATPs 
@@ -533,17 +534,17 @@
 	
 	This integration, like other hammer integrations, 
 	consists of a premise selection phase, a translation 
-	from Isabelle's HOL to the SMT solvers'
-	FOL, and the reconstruction of proofs found by the SMT solver with inference rules of Isabelle/HOL. 
-	Reconstruction involves either passing the minimal 
-	amount of facts needed to prove the goal by the 
-	external solver to metis, Sledgehammer's internal 
-	prover; or, sledgehammer can construct the proof 
-	from the external prover, inference by inference.
-	The solvers available to Sledgehammer are Z3, Yices, 
-	and CVC3. Yices and CVC3 are trusted as oracles.
-	Trusting SMT solvers isn't a dependable 
-	technique for previously mentioned reasons. The 
+	from Isabelle's HOL to the SMT solvers' FOL, and the 
+	reconstruction of proofs found by the SMT solver with 
+	inference rules of Isabelle/HOL. Reconstruction involves 
+	either passing the minimal amount of facts needed 
+	to prove the goal by the external solver to metis, 
+	Sledgehammer's internal prover; or, sledgehammer 
+	can construct the proof from the external prover, 
+	inference by inference.	The solvers available to 
+	Sledgehammer are Z3, Yices, and CVC3. Yices and CVC3 
+	are trusted as oracles.	Trusting SMT solvers isn't a 
+	dependable technique for previously mentioned reasons. The 
 	integration with Z3 involves proof production by 
 	Z3 and reconstruction of these proofs in Isabelle.
 	
@@ -556,12 +557,12 @@
 		validity of the translated problem implies 
 		validity of the original problem - but not 
 		complete - validity of the original problem 
-		implies validity of the translated problem.
-		HOL is more expressive than FOL. As such, 
-		all first-order terms are representable in 
-		HOL. Translation of this first-order subset
-		of HOL is pretty straightforward. More 
-		interestingly, the translation has to deal 
+		doesn't necessarily imply validity of the 
+		translated problem. HOL is more expressive 
+		than FOL. As such, all first-order terms 
+		are representable in HOL. Translation of this 
+		first-order subset of HOL is pretty straightforward. 
+		More interestingly, the translation has to deal 
 		with certain higher-order features that have 
 		no obvious first-order counterpart. Some of 
 		the incompleteness of the translation does 
@@ -615,19 +616,26 @@
 		argument $t_{m+1}$ as 
 		$app\ (c\ t_1 ... t_m)\ t_{m+1}$.
 		
-		The translation is an improvement of the 
+		The translation is less general than the 
 		translation used by Sledgehammer for 
-		superposition provers, because 
-		(monomorphic) types are embedded in 
-		SMT-solvers so some of the types from 
-		Isabelle such as integers and reals are 
-		mapped to their corresponding SMT types.
+		superposition provers, in that, since (monomorphic) 
+		types are embedded in SMT-solvers, some of the 
+		types from Isabelle such as integers and reals 
+		are mapped to their corresponding SMT types.
+		In addition, this work was extended with 
+		support for bit-vectors or machine integers
+		~\cite{10.1007/978-3-642-25379-9_15}. The 
+		Isabelle/HOL counterpart to the SMTLIB 
+		theory of bit-vectors was developed by 
+		Dawson~\cite{DAWSON200955}. All the SMTLIB
+		bit-vector operations have corresponding 
+		definitions in the bit-vector libraries of 
+		HOL4 and Isabelle/HOL.
 		
-		An evaluation on this translation 
-		showed that SMT solvers improved and 
-		complemented the proof automation from 
-		resolution provers on many trivial and 
-		non-trivial problems.
+		An evaluation on this translation showed that SMT 
+		solvers improved and complemented the proof automation 
+		from resolution provers on many trivial and non-trivial 
+		problems.
 		
 	\subsection{The Z3 Proof System}
 		Z3's proof system is a natural deduction 
@@ -637,10 +645,12 @@
 		$\Gamma$ is a set of formulas called the hypotheses
 		and $\varphi$ is a formula called the proposition. 
 		A rule consists of one or more sequents as 
-		premises and a sequent as the conclusion. A 
-		proof tree consists of axioms from the 
-		proof system as leaves, and application of 
-		rules as nodes, and since proof trees 
+		premises and a sequent as the conclusion. A
+		proof in Z3 is a directed acyclic graph (DAG)
+		but we also refer to them as proof trees in
+		this document. A proof tree consists of axioms 
+		from the proof system as leaves, and application 
+		of rules as nodes, and since proof trees 
 		document unsatisfiability of the input 
 		formulas, the root of the tree concludes the 
 		empty clause $\bot$, which is represented by 
@@ -806,8 +816,13 @@
 		Besides these, Z3 provides theory rules, 
 		that conclude disjunctions of theory literals 
 		called theory lemmas, for theory specific reasoning
-		and rewriting rules. Rewriting is an important 
-		part of SMT solvers - this process takes 
+		and rewriting rules. These are called 
+		\texttt{th-lemma} rules. The theory of bit-vectors
+		has special \texttt{th-lemma-bv} rules owing to 
+		the fact that bit-vector proofs involve reasoning 
+		about the corresponding bits of a bit-vector - 
+		a process called bit-blasting. Rewriting is an 
+		important part of SMT solvers - this process takes 
 		care of various simplifications and 
 		transformations to canonical forms. Z3 
 		provides a set of metatheorems that are 
@@ -819,6 +834,17 @@
 		fails to be reconstructed in Sledgehammer, 
 		the user can add a metatheorem that 
 		matches the pattern to fix the failure.
+		For the bit-vector 
+		extension~\cite{10.1007/978-3-642-25379-9_15}, 
+		schematic theorems that play the same roles 
+		as metatheorems - if a theorem's conclusion 
+		matches a term, the entire theorem is 
+		instantiated by the scheme - proved to 
+		be crucially time-saving. Besides commutativity 
+		and associativity rules specific to bit-vector
+		operations, examples include simplification 
+		rules such as neatrality of the bit-vector 
+		representing $0$ for bit-wise disjunction.
 		
 	\subsection{Proof Reconstruction}
 		The \textit{smt} tactic trusts the Yices 
@@ -840,15 +866,17 @@
 		tree with logarithmic lookup using the IDs as
 		keys. Reconstruction of a proof node 
 		represents a proven Isabelle/HOL theorem of 
-		the node's conclusion. Once reconstructed, a 
-		proof node can be reused by Sledgehammer.
-		If $\Pi$ is the set of asserted formulas, 
-		$\Pi^\prime$ represents the unsat core returned 
-		by Z3 - the minimal subset of $\Pi$ required 
-		to prove the problem unsat. After reconstructing
-		the root node, Sledgehammer checks the rest of
-		the tree to see that only the formulas from 
-		$\Pi^\prime$ remain as leaves.
+		the node's conclusion. Every node's 
+		premises are discharged as theorems, which are then 
+		used to derive the node's conclusion. Once 
+		reconstructed, a proof node can be reused 
+		by Sledgehammer. If $\Pi$ is the set of asserted 
+		formulas, $\Pi^\prime$ represents the unsat 
+		core returned by Z3 - the minimal subset of 
+		$\Pi$ required to prove the problem unsat. 
+		After reconstructing the root node, Sledgehammer 
+		checks the rest of the tree to see that only the 
+		formulas from $\Pi^\prime$ remain as leaves.
 		
 		Proof reconstruction is sound by construction 
 		and doesn't extend the trusted code base
@@ -856,6 +884,26 @@
 		In fact, this integration discovered soundness
 		bugs in Z3 that were subsequently fixed by the 
 		developers.
+		
+		For the theory of bit-vectors, the \textit{smt}
+		tactic involves some additional optimizations 
+		to offset the complexity added by bit-blasting - 
+		a process that can cause exponential blow-up. 
+		One of these - schematic theorem instantiation - 
+		is described in the previous sub-section. 
+		Memoization of theorems, that is, caching of 
+		certain computationally expensive bit-vector 
+		specific theorems in a structure called a term net 
+		also proved useful. These techniques, and many 
+		useful bit-vector rewrite rules - are used 
+		with HOL4 and Isabelle/HOL's existing automation
+		for bit-vector reasoning.
+		
+		Since Z3's proofs are relatively coarse-grained
+		proof reconstruction in Sledgehammer has to perform
+		proof search when the proof step isn't reflected 
+		in Z3's proof. The author's claim that this is 
+		a potential for improvement of the integration.
 		
 \section{SMTCoq}
 \label{sec:cert}
