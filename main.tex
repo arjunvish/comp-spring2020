@@ -919,7 +919,7 @@
 	
 	\begin{figure}[t]
 		\centering
-		\includegraphics[scale=0.5]{tactic_cex.pdf}
+		\includegraphics[scale=0.4]{tactic_cex.pdf}
 		\caption{SMTCoq's integration with SMT solvers.}
 		\label{fig:smtcoq}
 	\end{figure}
@@ -968,71 +968,111 @@
 	
 \section{Comparison}
 \label{sec:comp}
-	The most important difference between SMTCoq and Sledgehammer
-	is the extent to which they exploit the external SMT solver. 
-	Sledgehammer uses an external SMT-solver to guide it through 
-	proof search - it asks the SMT-solver whether a particular 
-	conjecture is provable; if the solver says yes, 
-	it tries to prove this conjecture in-house, and if it says 
-	no, it doesn't attempt to prove it. The SMT-solver thus 
-	saves time by telling the ITP which lemmas it shouldn't
-	waste its time on. SMTCoq has a more solid connection to 
-	the SMT-solver - once the SMT-solver says that a conjecture is 
-	provable, it produces a proof of the validity of this 
-	conjecture, and SMTCoq, after checking this proof in 
-	Coq, certifies the lemma as proved. Thus,
-	much more effort goes into making SMTCoq work - not only 
-	does the Coq conjecture need to be properly translated to 
-	SMTLIB, the proof produced by the SMT-solver also 
-	needs to be converted to something understandable 
-	by Coq and then checked within Coq. Translating from the ITP's 
-	higher order logic to the SMT-solver's first order logic 
-	is itself a challenging task that until recently, Sledgehammer 
-	had an unsound solution for and SMTCoq still does. 
-	\textcolor{red}{Make sure SMTCoq is unsound.} 
-	This is ameliorated by the fact that
-	SMT-solvers have a common input format in SMTLIB, so the 
-	translation has a single target. Matters are more complicate 
-	when it comes to proofs produced by SMT-solvers - there isn't 
-	a common format of outputs. SMTCoq therefore has to deal with 
-	the additional challenge of checking proofs in different 
-	formats in Coq. It handles this by adapting the proof 
-	format of the veriT SMT-solver and translating proofs 
-	from other solvers to this format. While this is an impressive
-	effort, it does expand the trust-base to include the 
-	translator itself.
+	Sledgehammer has 3 possible integrations with SMT solvers - 
+	it either trusts the SMT solver as an oracle; it uses the 
+	SMT solver as a relevance filter on premises so it can 
+	prove goals efficiently using metis; it reconstructs 
+	proofs produced by the SMT solver to produce goals 
+	without compromising the soundness guarantees of the 
+	small LCF-kernel. The third of these is most comparable 
+	to how SMTCoq operates - it sends Coq conjectures to the 
+	SAT or SMT solver, which returns a proof of the conjecture 
+	if it finds it to be provable; SMTCoq then checks this 
+	proof within Coq by reflection. SMTCoq can also be used as a 
+	checker for proofs produced by SMT solvers. In fact, while 
+	there exists an independent LFSC checker for LFSC proofs 
+	provided by CVC4, veriT, while proof producing, doesn't 
+	have a dedicated checker. It relies on integrations with 
+	proof assistants to check its output. In this section, we 
+	compare the usage of SMTCoq and Sledgehammer in their 
+	capacity to use SMT solvers to automated proofs within 
+	their respective ITPs.
 	
-	\textcolor{red}{Say something about the logic translation \\
-		Coq to SMTLIB vs \\
-		Isabelle/HOL to SMTLIB.}
+	ITPs have more expressive logics than ATPs. Roughly, the 
+	logic of an ATP is a subset of that of an ITP. So they 
+	can be used to automate goals that are expressed within 
+	this subset. Sledgehammer goes a little further by 
+	describing a translation of certain HOL features 
+	into FOL features understood by SMT solvers. While this 
+	translation is incomplete, it captures enough HOL features 
+	to widen the set of problems that an SMT solver can 
+	help automate. As a consequence SMTCoq's tactics 
+	cannot be called on Coq goals that contain anonymous 
+	functions or partial function applications. 
+	SMTCoq doesn't deal with polymorphic types 
+	or compound types either. There is a correspondence between 
+	types in Coq and theories in SMT, and only Coq 
+	goals that have these particular types can use the 
+	SMT solver. The integer sort from SMTLIB is mapped to Coq's 
+	$Z$ type, and Coq's $Bool$ type corresponds to propositional 
+	reasoning in SAT or SMT. However, SMTCoq defines custom types 
+	for machine integers and arrays. While these serve as rich,
+	independent Coq libraries for these types, they are 
+	not standardized in Coq. On the contrary, Sledgehammer 
+	only supports the theories of linear integer arithmetic
+	and bit-vectors, besides equality over uninterpreted functions
+	which both Sledgehammer and SMTCoq have support for. 
+	Additionally, SMTCoq doesn't have support for quantified 
+	formulas. Although the goal in Coq is universally 
+	quantified, on the SMT side, it amounts to checking the 
+	unsatisfiability of a quantifier-free formula. This is not 
+	the case with formulas containing either alternating 
+	quantifiers, or those that occur outside the head of the 
+	formula - SMTCoq will fail on these. Sledgehammer uses 
+	Z3's quantifier proofs to support quantified fragments of 
+	its theories.
 	
-	\textcolor{red}{premise selection?}
+	Premise selection is a crucial part of Sledgehammer. A lot 
+	of research has gone into optimizing premise selection to 
+	make proving more efficient. Consequently, the SMT 
+	integration also uses Sledgehammer's premise selection 
+	mechanisms to supply the SMT solver with the best 
+	possible hypotheses to prove a goal. This process is 
+	so imperative that using the SMT solver just as a 
+	relevance filter for premises has given useful 
+	results. In SMTCoq, each lemma is considered an 
+	independent entity with its set of hypotheses $H$ and 
+	goal $G$ that are translated to an SMTLIB problem. 
+	If the proof of $G$ depends on conjectures stated
+	outside of $H$, the SMT solver will likely not be 
+	able to prove them. This difference in 
+	ideology comes from the difference in axiomatizations
+	of theories in SMT solvers and resolution provers. 
+	Sledgehammer was originally coupled only 
+	with resolution provers that don't have notions of 
+	theories. Any additional axioms of a theory 
+	must be appended to the input of a superposition 
+	prover. SMT solvers have theories encoded into them, 
+	which might have facts besides $H$ that might help 
+	prove $G$. However, this might not always be the case.
+	We propose an extension to SMTCoq using abduction 
+	to deal with this shortcoming.
 	
-	\textcolor{red}{What theories does each tool support?}
+	The Sledgehammer integration with SMT solvers is 
+	specific to Z3 (although there are looser integrations 
+	with other SMT solvers). Although SMT solvers have 
+	a common input/output syntax in SMTLIB, their 
+	proof formats are quite different. Extending 
+	Sledgehammer's \textit{smt} tactic to other 
+	SMT solvers might not be straightforward due to 
+	the idiosyncrasies of Z3. On the other hand, SMTCoq
+	claims to be generic and extensible. SMTCoq has a 
+	certificate format, that is different from the proof 
+	formats of each SMT solver. To extend SMTCoq's 
+	support with a new solver, one only needs to 
+	write a preprocessor that translates proofs from 
+	this solver's format to that of the SMTCoq certificate.
+	The SMTCoq checker's soundness lemmas are also generic 
+	enough to add more theories simply by extending 
+	the type of terms in SMTCoq. These claims are reinforced
+	by extensions to SMTCoq. Initially, it had support only 
+	for the ZChaff SAT solver and the veriT SMT solver, 
+	with the ability to reason in the theories of EUF and 
+	LIA. Since its inception, the CVC4 SMT solver and 
+	the theories of bit-vectors and arrays have been 
+	added to SMTCoq's capabilities.
 	
 	\textcolor{red}{evaluation?}
-	
-	
-\section{To-Do}
-	\begin{enumerate}
-		\item Learn about HOL in SMT-solvers. Why are the approaches 
-		so different between the two sets of tools? Obviously because
-		HOL vs FOL but why can't this change? FOL tools use unsatisfiability 
-		as a dual of validity to prove stuff. HOL tools just use 
-		things like induction. And they are able to do this because
-		of human intervention?
-		\item Compare SMT solvers and ITPs just for propositional 
-		logic using a fairly simple example. Perhaps for just propositional 
-		logic, we can completely use an ATP within an ITP because 
-		of decidability? Then use theories, perhaps LIA, design a simple
-		example, show how the SMT solver would solve it, show how the 
-		ITP would solve it and then show what happens with 
-		Sledgehammer and Coqhammer.
-		\item What is the difference between resolution ATPs and SMT 
-		solvers and why are ATPs better with problems with quantifiers?
-		\item Sledgehammer uses unsat cores, read up on them.
-	\end{enumerate}
-	
 	
 \section{Conclusion and Moving Forward}
 \label{sec:conc}
