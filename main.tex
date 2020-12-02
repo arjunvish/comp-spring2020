@@ -332,20 +332,53 @@
 	
 \section{Proof Assistants}
 \label{sec:itp}
-	Most modern proof assistants or interactive 
-	theorem provers (ITPs) are modeled after 
-	the Logic for Computable Functions (LCF) theorem
-	prover \cite{10.5555/891954}, which is designed 
+	A proof assistant or interactive theorem prover 
+	(ITP) is a software tool used for formalizing 
+	of proofs by human-machine collaboration.
+	Proof assistants originated with the Automath
+	~\cite{10.1007/BFb0060623} and the Logic for 
+	Computable Functions (LCF) theorem prover ~\cite{10.5555/891954}, which is designed 
 	in the logic with the same name
-	\cite{Loeckx1987}. LCF-style theorem provers are 
-	based on a small inference kernel, where theorems 
+	~\cite{Loeckx1987}. Both emphasized the 
+	principle of having a small trustable proof 
+	checker. In LCF-style theorem provers theorems 
 	are implemented as an abstract datatype, and 
 	new theorems can only be constructed through a 
 	fixed set of functions, that correspond to the 
 	underlying logic's axiom schemata and inference 
 	rules, provided by this datatype. This keeps
 	the trusted codebase to a minimum, and 
-	provides strong soundness guarantees.
+	provides strong soundness guarantees. These 
+	include the HOL family of ITPs - HOL Light, 
+	HOL4 and Isabelle. Automath is based on type 
+	theory and the Curry-Howard isomorphism, where 
+	propositions or theorem statements are types, 
+	and their proofs are programs inhabiting them. 
+	ITPs taking the Automath approach to 
+	theorem-proving include Coq, Agda, NuPRL, 
+	Matita, and Lean.
+	
+	In the following sections, we focus on 
+	particular ATP integrations with Isabelle/HOL 
+	and Coq. Isabelle is a proof assistant that used 
+	to formalize of mathematical formulas. 
+	Isabelle/HOL is an instance of Isabelle that 
+	provides an expressive HOL to prove theorems in 
+	its proof language Isar, and also consists of a 
+	large library of formally verified mathematics. 
+	The Coq proof assistant provides a functional 
+	programming language interface in Gallina, and 
+	implements a type theory called the calculus of 
+	inductive constructions (CIC). Similar to 
+	Automath, theorems are types in Coq, and 
+	proofs are programs inhabiting them. While these 
+	proofs are written manually by the user, Coq 
+	provides some automation in the form of 
+	\textit{tactics}. Using tactics, the user 
+	must build a term whose type is the theorem 
+	being proved, and a proof ends with 
+	\texttt{Qed} which calls the Coq type checker 
+	to certify the proof.	
 	
 \section{Hammers}
 \label{sec:hammer}
@@ -501,14 +534,7 @@
 		
 \section{Sledgehammer}
 \label{sec:sledgehammer}
-	Isabelle is a proof assistant that used to 
-	formalize of mathematical formulas. Isabelle/HOL 
-	is an instance of Isabelle that provides an expressive 
-	HOL to prove theorems in its proof language Isar, 
-	and also consists of a large library of formally 
-	verified mathematics. 
-	
-	Sledgehammer is a component of Isabelle/HOL that uses 
+		Sledgehammer is a component of Isabelle/HOL that uses 
 	external ATPs to guide Isabelle/HOL's proving. The ATPs 
 	used by Sledgehammer can be classified as resolution 
 	provers and SMT-solvers. When a user wishes to 
@@ -907,22 +933,19 @@
 		
 \section{SMTCoq}
 \label{sec:cert}
-	SMTCoq is a Coq plugin that uses SAT and SMT solvers to 
-	prove goals in Coq. Another way of looking at it is 
-	to think of SMTCoq as a checker for results produced 
-	by the SMT solver. SMTCoq allows the user to query 
-	a number of SAT/SMT solvers and if the solver is able 
-	to validate the query, that is, it determines that 
-	the negation of the conjecture is unsatisfiable, it 
-	produces a proof of unsatisfiability, which is checked 
-	in Coq.
-	
-	\begin{figure}[t]
-		\centering
-		\includegraphics[scale=0.4]{tactic_cex.pdf}
-		\caption{SMTCoq's integration with SMT solvers.}
-		\label{fig:smtcoq}
-	\end{figure}
+	SMTCoq implements a skeptical cooperation between 
+	Coq and proof-producing SAT and SMT solvers. 
+	It can be used as a proof checker for proofs 
+	produced by SAT and SMT solvers. More relevantly, 
+	it is a Coq plugin that uses SAT and SMT solvers to 
+	prove goals in Coq. It is written and proved 
+	correct in Coq, with some OCaml support for 
+	translation and preprocessing. SMTCoq allows 
+	the user to query a number of SAT/SMT solvers 
+	and if the solver is able to validate the query, 
+	that is, it determines that the negation of the 
+	conjecture is unsatisfiable, it produces a proof 
+	of unsatisfiability, which is checked in Coq.
 	
 	Since different SMT solvers produce resolution 
 	proofs of unsatisfiability in different formats, 
@@ -935,6 +958,15 @@
 	suited for resolution proofs. The proof is a 
 	resolution proof which might consist of smaller proofs 
 	of theory lemmas from the theory solver. 
+	
+	\begin{figure}[t]
+		\centering
+		\includegraphics[scale=0.4]{tactic_cex.pdf}
+		\caption{SMTCoq's integration with SMT solvers.}
+		\label{fig:smtcoq}
+	\end{figure}
+	
+	
 	SMTCoq takes a modular approach of checking this proof.
 	The checker is divided into a main checker that 
 	delegates parts of the proof to small checkers. The proof 
