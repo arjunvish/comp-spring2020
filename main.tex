@@ -27,9 +27,9 @@
 	has focused on bridging the gap between these two poles 
 	of theorem proving. Hammers and certified checkers 
 	are tools that were born from this research, that have different 
-	approaches to this problem. This work aims to 
+	approaches to solving this problem. This work aims to 
 	comprehensively study these different tools 
-	with a focus on using SMT solvers as
+	with a focus on using SMT-solvers as
 	the ATPs enhancing automation in ITPs.
 \end{abstract}
 
@@ -57,12 +57,11 @@
 	with a counter-example that disproves it. ATPs are broadly divided into satisfiability modulo theories 
 	(SMT)-solvers and superposition provers. Although both 
 	of these have different approaches to proving, they 
-	both look at a formula in terms of whether it is 
-	unsatisfiable or not. The satisfiability problem 
-	is the dual of the validity problem (proving a 
-	formula to be valid) - a formula can be proved to be 
-	valid by establishing that its negation is 
-	unsatisfiable.
+	both look at a formula in terms of its satisfiability. 
+	The satisfiability problem is the dual of the validity
+	problem (proving a formula to be valid) - a formula can 
+	be proved to be valid by establishing that its negation 
+	is unsatisfiable.
 	
 	\begin{figure}[t]
 		\centering
@@ -83,41 +82,67 @@
 	In this work, we study various tools that 
 	attempt to combine these tools. We conclude with a 
 	more comprehensive study of two state-of-the-art
-	integrations of SMT solvers with proof assistants -
+	integrations of SMT-solvers with proof assistants -
 	the \textit{smt} tactic in Sledgehammer and 
-	SMTCoq. Both these tools use SMT solvers to 
+	SMTCoq. Both these tools use SMT-solvers to 
 	automate proofs in ITPs, but approach the 
-	problem very differently. 
-	two tools that take different approaches 
-	to this goal. A hammer helps an ITP prove lemmas by using 
-	an ATP to guide its proof search, and Sledgehammer is
-	the very first of these. On the other hand, 
-	a certified checker is more tightly integrated with the ATP 
-	- it also converts proofs produced by the ATPs and 
+	problem very differently. A hammer helps an ITP 
+	prove lemmas by using an ATP to guide its proof search, 
+	and Sledgehammer is	the very first of these. 
+	On the other hand, a certified checker is more 
+	tightly integrated with the ATP - it also converts 
+	proofs produced by the ATPs and 
 	checks them within the ITP. Thus, it gets results 
 	from outside the ITP but certifies them by checking them
 	inside the ITP. SMTCoq is a certified checker 
-	for the Coq proof assistant that uses SAT and SMT solvers
+	for the Coq proof assistant that uses SAT- and SMT-solvers
 	for automation.
 	
 	After specifying the notation used in the rest of the 
 	paper and discussing some tools in the area that 
-	we don't go deep into here, we describe SMT solvers
+	we don't go deep into here, we describe SMT-solvers
 	and superposition provers in \Cref{sec:atp}.
 	\Cref{sec:itp} explores the state-of-the-art 
 	of ITPs. \Cref{sec:hammer} and \Cref{sec:sledgehammer}
 	explore hammers in general, and Sledgehammer's
-	integration with SMT solvers in particular. In
-	\Cref{sec:cert}, we look at SMTCoq, a tool that 
-	takes a different approach to automating ITPs
-	using SAT and SMT solvers. Finally, we compare 
-	the 2 approaches in ~\Cref{sec:conc} and discuss
-	our plans to take this research forward.
-	\textcolor{red}{Give a preview of the rest of the paper here}
+	integration with SMT-solvers in particular. In
+	\Cref{sec:cert}, we look at SMTCoq. Finally, we 
+	compare the 2 approaches in ~\Cref{sec:conc} and 
+	discuss our plans to take this research forward.
 
-\section{Formal Preliminaries}
+\section{Technical Preliminaries}
 \label{sec:prelim}
-
+	Most of the notation and technicalities are 
+	introduced inline. For a thorough introduction 
+	to first order logic and satisfiability 
+	modulo theories, 
+	see~\cite{DBLP:reference/mc/BarrettT18}.
+	Briefly, terms are built from literals, 
+	and formulas are built from terms. Most 
+	verifiers reason over logical formulas. SMT-
+	solvers take as input arbitrary formulas, 
+	but convert them into conjunctive normal
+	form (CNF), which is a conjunction 
+	of clauses (disjunctions of literals).
+	Additionally, SMT deals with a sorted FOL -
+	sort is a formal synonym for type. 
+	
+	We also look at various rule systems. In 
+	general a rule looks like this:
+	\begin{center}
+		$\infer[rule-name]{conclusion}
+			{premise_1 & premise_2 & ... & premise_n}$
+	\end{center}
+	The rule called \textit{rule-name} has $n$ 
+	premises $premise_1, ... , premise_n$ and a 
+	conclusion $conclusion$. The rule can be 
+	understood as follows - if all $n$ premises 
+	are true, then it follows that the $conclusion$
+	is true. Usually, the premises and the conclusion 
+	are formulas but the Z3 SMT-solver uses a 
+	sequent calculus where these are sequents. 
+	These are introduced later before their usage.
+	
 \section{Related Work}
 \label{sec:rel}
 	\textcolor{red}{QED Manisfesto}\\
@@ -163,8 +188,8 @@
 	this comes at the cost of more complicated decision 
 	procedures.
 	
-	SMT solvers have plenty of applications in formal methods 
-	and software verification. For instance, SMT solvers are used 
+	SMT-solvers have plenty of applications in formal methods 
+	and software verification. For instance, SMT-solvers are used 
 	in the back-end of model checkers~\cite{DBLP:books/daglib/0020348}, 
 	which input mathematical 
 	models of a software system, and verify whether they 
@@ -173,7 +198,7 @@
 	execution~\cite{DBLP:journals/csur/BaldoniCDDF18}, 
 	which is to analyze a 
 	program to figure out what set of inputs work for each 
-	part of the program. Other uses of SMT solvers include 
+	part of the program. Other uses of SMT-solvers include 
 	program synthesis~\cite{synth}, static analysis, 
 	and interpolant generation~\cite{DBLP:journals/corr/abs-1111-5652}.
 	
@@ -191,13 +216,14 @@
 	primarily operates on the resolution principle, 
 	a universally accepted proof calculus is one based 
 	on resolution. Specifically, a proof of unsatisfiability 
-	of a formula in CNF, is a tree with the input 
-	clauses and theory lemmas at the leaves, and the empty 
-	clause at the root. The resolution rule 
-	takes two clauses, a pivot element that occurs 
-	with opposite polarities 
-	in each of the clauses, and gives one clause that is 
-	a consequent of the premises. The idea is that, beginning 
+	of a formula in conjunctive normal form (CNF), is a tree 
+	with the input clauses and theory lemmas at the leaves, 
+	and the empty clause at the root. 
+	
+	The resolution rule takes two clauses, a pivot element 
+	that occurs with opposite polarities in each of the 
+	clauses, and gives one clause that is a consequent 
+	of the premises. The idea is that, beginning 
 	with the input clauses and the theory lemmas (which might 
 	have their own sub-proof trees coming from the theory solvers), 
 	the tree derives that the empty clause holds, which is the 
@@ -221,7 +247,7 @@
 		\label{fig:tree}
 	\end{figure}
 
-	The proof calculus for an SMT solver consists 
+	The proof calculus for an SMT-solver consists 
 	of proof rules such as resolution and a 
 	proof of unsatisfiability is a proof tree with 
 	the assertions asserted in the problem as 
@@ -235,22 +261,29 @@
 	and the root concludes the empty clause $\bot$.
 	
 	Even though the calculus is common among the SMT-solvers, 
-	it hasn't been standardized. CVC4 uses a proof language called
-	LFSC or (Logical Framework with Side Conditions) that mixes 
-	declarative rules with computable programs; veriT uses a rule-bases 
-	calculus defined in a SMTLIB like syntax; Z3 uses a rule based 
-	calculus with a relatively lower level of granularity. 
+	it hasn't been standardized. CVC4 uses a proof language 
+	called LFSC or (Logical Framework with Side Conditions) 
+	that mixes declarative rules with computable programs; 
+	veriT uses a rule-bases calculus defined in a 
+	SMTLIB-like syntax; Z3 uses a rule-based calculus with 
+	a relatively lower level of granularity.
 	
 	\subsection{Superposition Provers}
 	\label{sup}
 	Superposition provers or resolution provers differ 
-	from SMT solvers in that they focus on proving 
+	from SMT-solvers in that they focus on proving 
 	conjectures rather than finding a satisfiable model
-	for a set of formulas. The problem is formulated 
-	as a set of axioms that relate to the problem space, 
-	a set assumptions and a conjecture to prove. 
-	The goal is to find the unsatisfiability of 
-	the negation of the conjecture along with the 
+	for a set of formulas. While these problems are 
+	duals of each other, picking one over the other 
+	does make a difference in the kinds of problems 
+	that become solvable due to the complexity of 
+	the problem space - the SAT problem is NP-complete
+	and theory reasoning often leads to undecidability.
+	The input problem to a superposition prover is 
+	formulated as a set of axioms that relate to the 
+	problem space, a set assumptions and a conjecture 
+	to prove. The goal is to find the unsatisfiability 
+	of the negation of the conjecture along with the 
 	assumptions and the axioms, and this is done 
 	by refutation. The prover converts 
 	the input formulas into a set of clauses and 
@@ -268,17 +301,21 @@
 	on the terms in the clauses to reduce the number 
 	of rule applications.
 	
-	At the leaves are axioms or assumptions, and 
-	each node is obtained using one or more inference
-	rules applied on previous nodes/leaves. 
 	A proof trace is a DAG with the empty clause at
-	the root. The inference rules are sound and 
-	usually theoretically complete, but in practice 
-	this might be only true with infinite resources.
+	the root, and the axioms/assumptions at the leaves. 
+	Each node is obtained using one or more inference
+	rules applied on previous nodes/leaves. The 
+	inference rules are sound and usually theoretically 
+	complete, but in practice, this might be only true 
+	with infinite resources.
 	
-	Popular resolution provers like Vampire, E, and 
-	SPASS adhere to the TPTP (Thousands of Problems 
-	for Theorem Provers) input/output standard.
+	Popular resolution provers like 
+	Vampire~\cite{10.1007/978-3-642-39799-8_1}, 
+	E~\cite{10.5555/1218615.1218621}, and 
+	SPASS~\cite{10.1007/978-3-642-02959-2_10} adhere 
+	to the TPTP (Thousands of Problems 
+	for Theorem 
+	Provers)~\cite{Sut17} input/output standard.
 	
 	The superposition prover applies the inference 
 	rules to the input set of 
@@ -314,18 +351,17 @@
 	leaves of the DAG before running the 
 	saturation algorithm.
 	
-	While both SMT solvers and superposition provers 
-	produce resolution proofs, SMT solvers are guided 
+	While both SMT-solvers and superposition provers 
+	produce resolution proofs, SMT-solvers are guided 
 	by trying to find a satisfying model to an input 
 	problem whereas superposition provers try 
 	to prove the negation of conjecture to be unsatisfiable
 	with the remaining assertions in the problem. 
-	
-	Additionally, theories are built-in for SMT solvers,
+	Additionally, theories are built-in for SMT-solvers,
 	while they need to be externally axiomatized for 
 	resolution provers. As such, superposition provers
 	are better suited for quantified formulas and 
-	minimal theory reasoning, whereas SMT solvers 
+	minimal theory reasoning, whereas SMT-solvers 
 	do well on problems that contain constraints 
 	in theories and quantified formulas slow them 
 	down.
@@ -333,15 +369,16 @@
 \section{Proof Assistants}
 \label{sec:itp}
 	A proof assistant or interactive theorem prover 
-	(ITP) is a software tool used for formalizing 
-	of proofs by human-machine collaboration.
-	Proof assistants originated with the Automath
-	~\cite{10.1007/BFb0060623} and the Logic for 
-	Computable Functions (LCF) theorem prover ~\cite{10.5555/891954}, which is designed 
-	in the logic with the same name
-	~\cite{Loeckx1987}. Both emphasized the 
+	(ITP) is a software tool used to formalize
+	proofs by human-machine collaboration.
+	Proof assistants originated with the 
+	Automath~\cite{10.1007/BFb0060623} and 
+	the Logic for Computable Functions (LCF) 
+	theorem prover~\cite{10.5555/891954}, 
+	which is designed in the logic with the 
+	same name~\cite{Loeckx1987}. Both emphasized the 
 	principle of having a small trustable proof 
-	checker. In LCF-style theorem provers theorems 
+	checker. In LCF-style theorem provers, theorems 
 	are implemented as an abstract datatype, and 
 	new theorems can only be constructed through a 
 	fixed set of functions, that correspond to the 
@@ -360,8 +397,8 @@
 	
 	In the following sections, we focus on 
 	particular ATP integrations with Isabelle/HOL 
-	and Coq. Isabelle is a proof assistant that used 
-	to formalize of mathematical formulas. 
+	and Coq. Isabelle is a proof assistant that is 
+	used to formalize mathematical formulas. 
 	Isabelle/HOL is an instance of Isabelle that 
 	provides an expressive HOL to prove theorems in 
 	its proof language Isar, and also consists of a 
@@ -391,11 +428,9 @@
 	within the ITP.
 	
 	\subsection{Premise Selection}
-		While queries to SMT solvers are contained within a single 
-		file, this isn't necessarily the case for ITPs. An SMT file
-		typically consists along with declarations and definitions 
-		of a set of assertions and a query that checks whether 
-		their conjunction is satisfiable or not. 
+		An SMT file	typically consists along with 
+		declarations and definitions of a set of assertions 
+		and a query that checks whether their conjunction is satisfiable or not. 
 		One can imagine a set of hypotheses 
 		$H_1, H_2, ..., H_n$ and a conjecture $G$, with a 
 		typical goal in an ITP that looks like $L$:
@@ -437,64 +472,65 @@
 		selection. The most basic form of premise selection 
 		is to allow for the user to find relevant facts 
 		to prove a conjecture. But given that these libraries 
-		have hundreds of lemmas, automatic methods to select 
-		premises is a more scalable and generalizable approach.
+		have hundreds of lemmas, using automatic methods 
+		to select premises is a more scalable and 
+		generalizable approach.
 	
-		Historically, premise selection was delegated to the 
-		user, but modern hammers have plenty of ways to 
-		automate this process. Some that use machine learning
-		to learn axiom selection from previously successful 
-		proofs using methods such as ones based on 
-		Bayesian statistics \cite{DBLP:journals/jar/AlamaHKTU14}, 
-		a nearest-neighbor ranking function 
-		\cite{DBLP:conf/cade/KaliszykU13a}, and non-linear 
-		kernel methods \cite{DBLP:journals/jar/AlamaHKTU14}.
+		Modern hammers have plenty of ways to 
+		automate this premise selection. Some of them use 
+		machine learning to learn axiom selection from 
+		previously successful proofs using methods such as 
+		ones based on Bayesian 
+		statistics~\cite{DBLP:journals/jar/AlamaHKTU14}, 
+		a nearest-neighbor ranking 
+		function~\cite{DBLP:conf/cade/KaliszykU13a}, and
+		non-linear kernel
+		methods~\cite{DBLP:journals/jar/AlamaHKTU14}.
 		Others use simpler algorithms; the relevance filter 
-		by Meng and Paulson 
-		\cite{DBLP:journals/japll/MengP09}
+		by Meng and Paulson~\cite{DBLP:journals/japll/MengP09}
 		for the Isabelle/HOL ITP selects relevant facts by 
-		giving priority to the number of symbols in common 
-		with the goal. The SInE (SUMO Inference Engine) 
-		\cite{10.1007/978-3-642-22438-6_23} does something 
-		similar in the ATP Vampire. The Divvy system 
-		\cite{10.1007/978-3-642-02959-2_13} also uses a 
-		syntactic relevance filtering technique but it 
-		selects from the ordered facts from the middle, 
-		instead of doing it from the top of the list; it
+		giving priority to those with a larger number of 
+		symbols in common with the goal. The SInE 
+		(SUMO Inference 
+		Engine)~\cite{10.1007/978-3-642-22438-6_23} does
+		something similar in the Vampire ATP. The Divvy 
+		system~\cite{10.1007/978-3-642-02959-2_13} also 
+		uses a syntactic relevance filtering technique but 
+		it selects from a list of ordered facts from the 
+		middle, instead of doing it from the top; it
 		also uses an ordering technique based 
 		on latent semantics called APRILS (Automated 
-		Prophesier of Relevance Incorporating Latent Semantics).
-		Others use semantics instead of syntax to guide
-		the selection process. For instance, the SRASS 
-		(Semantic Relevance Axiom Selection System) 
-		\cite{10.1007/978-3-540-73595-3_20} finds 
-		countermodels of the conjecture and selects axioms that
-		exclude the countermodels. Other research combined
-		these various types of methods to increase efficiency 
-		\cite{DBLP:journals/corr/KaliszykU13b, 
-			10.1007/978-3-642-31365-3_30}.
+		Prophesier of Relevance Incorporating Latent 
+		Semantics). Others use semantics instead of 
+		syntax to guide	the selection process. For 
+		instance, the SRASS (Semantic Relevance Axiom 
+		Selection 
+		System)~\cite{10.1007/978-3-540-73595-3_20} 
+		finds countermodels of the conjecture and selects 
+		axioms that	exclude the countermodels. Other research combined these various types of methods to increase efficiency~\cite{DBLP:journals/corr/KaliszykU13b, 
+		10.1007/978-3-642-31365-3_30}.
 		
 		\subsection{Translation}
-		ITPs allow for a more expressive higher-order logic
+		ITPs use an expressive higher-order logic
 		(HOL) with set-theoretic notation, whereas ATPs 
 		are mostly restricted to first-order logic (FOL). 
-		Thus, not all 
-		ITP problems are transferable to an ATP. However, 
-		there is a large enough subset of problems provable
-		by an ATP that can help an ITP user. When a goal is 
-		provable by an ATP, it needs to be soundly translated 
-		to its logic. The translation can involve various 
-		tricks to eliminate higher-order constructs
-		\cite{DBLP:journals/jar/MengP08} 
+		Thus, not all ITP problems are transferable to 
+		an ATP. However, there is a large enough subset 
+		of problems provable by an ATP that can help an 
+		ITP user. When a goal is provable by an ATP, it 
+		needs to be soundly translated to its logic. 
+		The translation can involve various tricks to 
+		eliminate higher-order 
+		constructs~\cite{DBLP:journals/jar/MengP08} 
 		such as higher order quantification, partial 
 		function applications, and anonymous functions
 		from the goal, and an encoding of any 
 		type information where necessary. Resolution 
-		provers usually don't have 
-		in-built types, so a theory must be externally 
-		axiomatized within the ATP. With SMT solvers, there
-		maybe a stronger correspondence between some types and 
-		sorts. 
+		provers usually don't have in-built types, so a 
+		theory must be externally axiomatized within the 
+		ATP. With SMT-solvers, there maybe a stronger
+		correspondence between some types and 
+		sorts.
 	
 		\subsection{Proof Reconstruction}
 		Once the goal is translated to a problem understandable 
@@ -504,20 +540,20 @@
 		the ITP corresponds to the unsatisfiability of its 
 		negation in the ATP. If it is satisfiable, this 
 		translates to a counterexample of the fact that 
-		the goal holds. Hammers sometimes use ATPs 
-		in this way to avoid wasting time proving 
-		unprovable goals. More interestingly, if the 
-		goal is found to be unsatisfiable in the ATP, 
-		the refutation proof of its unsatisfiability
-		needs to be consumed by the ITP. In its simplest form,
-		this pipeline consists of using the ATP as an oracle, 
-		that is to consider the goal to be proven in the 
-		ITP if the ATP concludes that its negation is 
-		unsatisfiable. This compromises the ITP's 
-		trustworthiness and adds to the the trust-base, 
-		the entire ATP.
+		the goal holds. Hammers sometimes use this 
+		feature of the ATP to avoid wasting effort 
+		trying to prove unprovable sub-goals. More 
+		interestingly, if the goal is found to be 
+		unsatisfiable in the ATP, the refutation proof of 
+		its unsatisfiability needs to be processed by the 
+		ITP. In its simplest form, this pipeline consists 
+		of using the ATP as an oracle, that is to consider 
+		the goal to be proven in the ITP if the ATP 
+		concludes that its negation is unsatisfiable. 
+		This compromises the ITP's trustworthiness and adds 
+		to the the trust-base, the entire ATP.
 		
-		One way of doing this is to independently reconstruct 
+		An improvement is to independently reconstruct 
 		the proof in the proof assistant once the ATP finds 
 		the goal to be unsatisfiable. In this case, the 
 		only information the ITP gets from the ATP is that 
@@ -525,61 +561,60 @@
 		not care about how the ATP proved this conjecture.
 		Essentially, the ATP acts as a relevance filter for 
 		the prover inside the ITP. This is done, for instance, 
-		with Isabelle and the Metis prover 
-		\cite{10.1007/978-3-540-74591-4_18}. A more involved
-		integration involves using in addition to the premises
-		the proof steps used by the ATP, as in PRocH
-		\cite{10.1007/978-3-642-38574-2_18} that reconstructs 
-		TPTP proofs in HOL Light.
+		with Isabelle and the Metis 
+		prover~\cite{10.1007/978-3-540-74591-4_18}. A more
+		involved integration uses the proof steps used by 
+		the ATP in addition to the premises, as in 
+		PRocH~\cite{10.1007/978-3-642-38574-2_18} that reconstructs TPTP proofs in HOL Light.
 		
 \section{Sledgehammer}
 \label{sec:sledgehammer}
-		Sledgehammer is a component of Isabelle/HOL that uses 
-	external ATPs to guide Isabelle/HOL's proving. The ATPs 
-	used by Sledgehammer can be classified as resolution 
-	provers and SMT-solvers. When a user wishes to 
-	find a proof for a conjecture using Sledgehammer, 
-	the tool picks a few hundred relevant 
-	lemmas from Isabelle's libraries and sends them along 
+	Sledgehammer is a component of Isabelle/HOL that uses 
+	external ATPs to guide Isabelle/HOL's proof methods. 
+	Sledgehammer uses both resolution provers and 
+	SMT-solvers for proof automation. When a user wishes 
+	to find a proof for a conjecture using Sledgehammer, 
+	the tool picks a few hundred relevant lemmas from 
+	Isabelle's libraries and sends them along 
 	with the conjecture to the ATP. The conjecture is 
 	translated from Isabelle's polymorphic higher-order 
-	logic to the ATP's first order logic. Sledgehammer 
-	runs this query parallelly by invoking all available 
-	ATPs. If the ATP is able to prove the conjecture, 
-	Isabelle's own prover metis sets out to reconstruct 
-	this proof. Essentially, the role of the 
-	ATP in this integration is to filter out relevant 
-	facts for metis to efficiently work with and 
-	also to eliminate disprovable sub-goals from 
-	metis's search space.
+	logic (HOL) to the ATP's first order logic (FOL).
+	Sledgehammer runs this query parallelly by invoking 
+	all available ATPs. If the ATP is able to prove 
+	the conjecture, Isabelle's own prover - Metis - sets 
+	out to reprove the goal with the same premises. 
+	Essentially, the role of the ATP in this integration 
+	is to filter out relevant facts for Metis to 
+	efficiently work with and also to eliminate 
+	disprovable sub-goals from Metis's search space.
 	
-	In the rest of this section, we expands on the work 
+	In the rest of this section, we expand on the work 
 	done to integrate SMT-solvers with Isabelle/HOL via 
 	Sledgehammer. Sledgehammer provides the \textit{smt}
 	tactic to utilize this feature.
 	
 	This integration, like other hammer integrations, 
 	consists of a premise selection phase, a translation 
-	from Isabelle's HOL to the SMT solvers' FOL, and the 
-	reconstruction of proofs found by the SMT solver with 
+	from Isabelle's HOL to the SMT-solvers' FOL, and the 
+	reconstruction of proofs found by the SMT-solver with 
 	inference rules of Isabelle/HOL. Reconstruction involves 
 	either passing the minimal amount of facts needed 
-	to prove the goal by the external solver to metis, 
+	to prove the goal by the external solver to Metis, 
 	Sledgehammer's internal prover; or, sledgehammer 
 	can construct the proof from the external prover, 
 	inference by inference.	The solvers available to 
 	Sledgehammer are Z3, Yices, and CVC3. Yices and CVC3 
-	are trusted as oracles.	Trusting SMT solvers isn't a 
-	dependable technique for previously mentioned reasons. The 
-	integration with Z3 involves proof production by 
+	are trusted as oracles.	Trusting SMT-solvers isn't a 
+	dependable technique for previously mentioned reasons. 
+	The integration with Z3 involves proof production by 
 	Z3 and reconstruction of these proofs in Isabelle.
 	
 	\subsection{Translation}
-		The integration of Sledgehammer with SMT solvers 
+		The integration of Sledgehammer with SMT-solvers 
 		consists of a translation from HOL 
 		to multi-sorted FOL. The target 
 		of the translation is the SMTLIB standard for 
-		SMT solvers. The translation is sound - 
+		SMT-solvers. The translation is sound - 
 		validity of the translated problem implies 
 		validity of the original problem - but not 
 		complete - validity of the original problem 
@@ -621,9 +656,9 @@
 		$\kappa\ \tau_1 ... \tau_n$ as a first-order 
 		type $\kappa^n$.
 		
-		Anonymous functions from HOL are translated 
+		An anonymous functions from HOL is translated 
 		to a named function and a quantified constraint
-		is added to specify the functions behavior.
+		is added to specify the function's behavior.
 		This is called $\lambda-$lifting.
 		A term $t$ that contains a $\lambda-$abstraction
 		(anonymous function) $\lambda x.u$ is translated 
@@ -760,7 +795,7 @@
 		to the simple rules from \Cref{fig:z3-rules},
 		resolution is a rule that's central to the 
 		proof calculus. Resolution was introduced in 
-		\Cref{smt} and is a special case of it 
+		\Cref{smt} and a special case of it 
 		called unit resolution is represented as follows in 
 		the sequent calculus of Z3, where 
 		$I = \{1,...,n\}$ and $J$ is a non-empty 
@@ -781,7 +816,7 @@
 		that aren't in CNF, until the entire formula 
 		is in CNF. Z3 runs this algorithm lazily and 
 		optimizes it to avoid introducing too many 
-		new vriables. A formula is in negation normal 
+		new variables. A formula is in negation normal 
 		form (NNF) if negations are applied only to
 		variables and the only Boolean operators 
 		in it are conjunction and disjunction. 
@@ -801,14 +836,15 @@
 		Equality ($=$), equivalence ($\iff$), and 
 		equisatisfiability ($\sim$) are congruence 
 		relations, and $\simeq$ represents any one 
-		of these relations. $I$ and $J$ are defined 
+		of these relations. $\equiv$ represents syntactic 
+		equivalence of terms. $I$ and $J$ are defined 
 		as above for resolution.
 		
 		Z3 is also proof producing for quantified formulas.
 		$Q$ represents either of the two quantifiers - 
 		the universal quantifier $\forall$ or the 
 		existential quantifier $\exists$ - and 
-		$\overline{x}$ represents a lost of variables 
+		$\overline{x}$ represents a list of variables 
 		$x_1,...,x_n$. The following 
 		proof rule allows introduction of quantifiers:
 		\begin{equation*}
@@ -825,6 +861,9 @@
 			\lor \varphi[\overline{x} \mapsto \overline{t}]}
 			{}
 		\end{equation*}
+		Note representation of implication $a \to b$ in its 
+		CNF form $\neg a \lor b$.
+		
 		Skolemization~\cite{NONNENGART2001335} is the process 
 		of removing existential quantifiers from formulas using 
 		constants called Skolem constants as witnesses.
@@ -847,8 +886,10 @@
 		has special \texttt{th-lemma-bv} rules owing to 
 		the fact that bit-vector proofs involve reasoning 
 		about the corresponding bits of a bit-vector - 
-		a process called bit-blasting. Rewriting is an 
-		important part of SMT solvers - this process takes 
+		a process called bit-blasting. 
+		
+		Rewriting is an important part of SMT-solvers - 
+		this process takes 
 		care of various simplifications and 
 		transformations to canonical forms. Z3 
 		provides a set of metatheorems that are 
@@ -928,59 +969,115 @@
 		Since Z3's proofs are relatively coarse-grained
 		proof reconstruction in Sledgehammer has to perform
 		proof search when the proof step isn't reflected 
-		in Z3's proof. The author's claim that this is 
-		a potential for improvement of the integration.
+		in Z3's proof. According to the author's, 
+		enhancing Z3 with more descriptive rules would 
+		help improve the \textit{smt} tactic and strengthen 
+		the integration.
 		
 \section{SMTCoq}
 \label{sec:cert}
 	SMTCoq implements a skeptical cooperation between 
-	Coq and proof-producing SAT and SMT solvers. 
+	Coq and proof-producing SAT- and SMT-solvers. 
 	It can be used as a proof checker for proofs 
-	produced by SAT and SMT solvers. More relevantly, 
-	it is a Coq plugin that uses SAT and SMT solvers to 
+	produced by SAT- and SMT-solvers. More relevantly, 
+	it is a Coq plugin that uses SAT- and SMT-solvers to 
 	prove goals in Coq. It is written and proved 
 	correct in Coq, with some OCaml support for 
 	translation and preprocessing. SMTCoq allows 
-	the user to query a number of SAT/SMT solvers 
+	the user to query a number of SAT/SMT-solvers 
 	and if the solver is able to validate the query, 
 	that is, it determines that the negation of the 
 	conjecture is unsatisfiable, it produces a proof 
 	of unsatisfiability, which is checked in Coq.
 	
-	Since different SMT solvers produce resolution 
+	SMTCoq's uses \textit{computational reflection}
+	~\cite{113737} to invoke Coq's computation within 
+	proofs. Proofs can be shortened by increasing 
+	their computational	part, due to the 
+	Curry-Howard isomorphism that Coq is based on. 
+	Reflection requires the SMT-solver's first-order
+	terms to have two representations. FOL terms are 
+	represented in Coq using Coq's first-order 
+	terms in a \textit{shallow embedding} and also 
+	using datatypes defined in Coq - the 
+	\textit{deep embedding}. Thus, FOL statements 
+	are naturally represented in Coq in its 
+	shallow embedding. Reflection allows to 
+	prove these statements using computations 
+	on their deep embedding. SMTCoq provides 
+	the tools necessary to switch between the 
+	two embeddings - an \textit{interpretion} 
+	function compiles deep terms to their Coq 
+	counterparts; and \textit{reification} 
+	- written in OCaml without compromising 
+	soundness - transforms shallow terms to the 
+	corresponding deep terms.
+	
+	A Boolean decision procedure in SMTCoq, checks 
+	proof certificates from solvers. However, 
+	\texttt{Prop} is the type of propositions 
+	in Coq, and thus is the type of proofs. 
+	The Ssreflect plugin allows reflection from 
+	the \texttt{bool} type in Coq to \texttt{Prop}.
+	This is crucial since Booleans are easier to 
+	manipulate via computations and propositions are 
+	harder to prove.
+	
+	SMTCoq is sound - proven to be correct in Coq 
+	- but not complete. This means that when an 
+	SMT-solver proves a conjecture, we can we be 
+	confident of its response since we get a 
+	\texttt{Qed} proof in Coq. However, if 
+	SMTCoq isn't able to prove a conjecture, 
+	we cannot be sure that its unprovable.
+	Since certain theories can make SMT 
+	solving undecidable, completeness isn't a 
+	realistic goal.	
+	
+	Since different SMT-solvers produce resolution 
 	proofs of unsatisfiability in different formats, 
 	SMTCoq has its own input certificate format. 
-	The proofs from the different SMT solvers are 
+	The proofs from the different SMT-solvers are 
 	translated to an SMTCoq certificate which 
 	can then be checked within Coq. Given an input 
-	query, the SMT solver first converts into CNF
+	query, the SMT-solver first converts it into CNF
 	(conjunction normal form) which is better 
-	suited for resolution proofs. The proof is a 
-	resolution proof which might consist of smaller proofs 
-	of theory lemmas from the theory solver. 
+	suited for resolution proofs. The final 
+	resolution proof might also consist of smaller 
+	proofs of theory lemmas from the theory solver. 
 	
 	\begin{figure}[t]
 		\centering
 		\includegraphics[scale=0.4]{tactic_cex.pdf}
-		\caption{SMTCoq's integration with SMT solvers.}
+		\caption{SMTCoq's integration with SMT-solvers.}
 		\label{fig:smtcoq}
 	\end{figure}
 	
-	
-	SMTCoq takes a modular approach of checking this proof.
-	The checker is divided into a main checker that 
-	delegates parts of the proof to small checkers. The proof 
-	is divided into steps that small checkers can check.
-	There is a small checker each for CNF conversion, 
-	resolution, and for each theory. The main checker divides the 
-	proof into steps, gives the step to the relevant small 
-	checker, and checks that in the end, the empty 
-	clause is deduced from the initial query. Each small 
-	checker operates independently and maintains an invariant
+	SMTCoq takes a modular approach of checking an
+	SMT proof. The checker is divided into a main checker 
+	that delegates parts of the proof to small checkers. 
+	The proof is divided into steps that small checkers 
+	can check. There is a small checker each for CNF 
+	conversion, resolution, and for each theory. 
+	Additionally, SMT solvers perform a preprocessing 
+	step to rewrite certain input formulas to 
+	a simplified version. The main checker divides the 
+	proof into steps, gives the step to the relevant 
+	small checker, and checks that in the 
+	end, the empty clause is deduced from the initial query.
+	Since this initial query is the negation of our 
+	conjecture, deriving the empty clause from it 
+	signifies its unsatisfiability. Each small checker 
+	operates independently and maintains an invariant 
 	that allows the checking process to be split this way.
-	
-	Currently SMTCoq supports the SAT solvers zChaff and Glucose, 
-	and the SMT solvers CVC4 and veriT. 
+	Paricularly, the correctness of the main checker 
+	depends on the correctness of each small checker.
+	Since each small checker transforms our initial 
+	query by replacing clauses by new ones, its 
+	correctness testifies to not introducing 
+	unsound transformations. In other words, the 
+	small checker guarantees that its step doesn't 
+	modify unsatisfiability of the state.
 	
 	SMTCoq uses Coq's native arrays to store the clauses, 
 	a set of which represent the goal. The main checker 
@@ -992,32 +1089,37 @@
 	wont be useful anymore. After all the steps 
 	are handled by the small checkers, the main 
 	checker checks that the final implied clause is 
-	the empty clause.
+	the empty clause. Sub-terms of deep terms 
+	are hash-consed (or cached) to allow for maximal 
+	sharing. Additionally, variables and literals 
+	of FOL are represented in Coq using machine 
+	integers on which fast computations can be 
+	performed to manipulate them.
 	
-	\textcolor{red}{Deep vs shallow embedding}\\
-	\textcolor{red}{Reification}\\
-	\textcolor{red}{Important lemmas - the one that equates the embeddings}\\
+	Currently SMTCoq supports the SAT-solvers 
+	zChaff and Glucose, and the SMT-solvers CVC4 and 
+	veriT. 
 	
 \section{Comparison}
 \label{sec:comp}
-	Sledgehammer has 3 possible integrations with SMT solvers - 
-	it either trusts the SMT solver as an oracle; it uses the 
-	SMT solver as a relevance filter on premises so it can 
-	prove goals efficiently using metis; it reconstructs 
-	proofs produced by the SMT solver to produce goals 
+	Sledgehammer has 3 possible integrations with SMT-solvers - 
+	it either trusts the SMT-solver as an oracle, or uses the 
+	SMT-solver as a relevance filter on premises so it can 
+	prove goals efficiently using Metis, or it reconstructs 
+	proofs produced by the SMT-solver to produce goals 
 	without compromising the soundness guarantees of the 
 	small LCF-kernel. The third of these is most comparable 
 	to how SMTCoq operates - it sends Coq conjectures to the 
-	SAT or SMT solver, which returns a proof of the conjecture 
+	SAT- or SMT-solver, which returns a proof of the conjecture 
 	if it finds it to be provable; SMTCoq then checks this 
 	proof within Coq by reflection. SMTCoq can also be used as a 
-	checker for proofs produced by SMT solvers. In fact, while 
+	checker for proofs produced by SMT-solvers. In fact, while 
 	there exists an independent LFSC checker for LFSC proofs 
-	provided by CVC4, veriT, while proof producing, doesn't 
+	provided by CVC4, veriT produces proofs but doesn't 
 	have a dedicated checker. It relies on integrations with 
 	proof assistants to check its output. In this section, we 
 	compare the usage of SMTCoq and Sledgehammer in their 
-	capacity to use SMT solvers to automated proofs within 
+	capacity to use SMT-solvers to automated proofs within 
 	their respective ITPs.
 	
 	ITPs have more expressive logics than ATPs. Roughly, the 
@@ -1025,72 +1127,74 @@
 	can be used to automate goals that are expressed within 
 	this subset. Sledgehammer goes a little further by 
 	describing a translation of certain HOL features 
-	into FOL features understood by SMT solvers. While this 
+	into FOL features understood by SMT-solvers. While this 
 	translation is incomplete, it captures enough HOL features 
-	to widen the set of problems that an SMT solver can 
-	help automate. As a consequence SMTCoq's tactics 
-	cannot be called on Coq goals that contain anonymous 
-	functions or partial function applications. 
-	SMTCoq doesn't deal with polymorphic types 
-	or compound types either. There is a correspondence between 
-	types in Coq and theories in SMT, and only Coq 
-	goals that have these particular types can use the 
-	SMT solver. The integer sort from SMTLIB is mapped to Coq's 
-	$Z$ type, and Coq's $Bool$ type corresponds to propositional 
-	reasoning in SAT or SMT. However, SMTCoq defines custom types 
-	for machine integers and arrays. While these serve as rich,
-	independent Coq libraries for these types, they are 
-	not standardized in Coq. On the contrary, Sledgehammer 
-	only supports the theories of linear integer arithmetic
-	and bit-vectors, besides equality over uninterpreted functions
-	which both Sledgehammer and SMTCoq have support for. 
-	Additionally, SMTCoq doesn't have support for quantified 
-	formulas. Although the goal in Coq is universally 
-	quantified, on the SMT side, it amounts to checking the 
-	unsatisfiability of a quantifier-free formula. This is not 
-	the case with formulas containing either alternating 
-	quantifiers, or those that occur outside the head of the 
-	formula - SMTCoq will fail on these. Sledgehammer uses 
-	Z3's quantifier proofs to support quantified fragments of 
+	to widen the set of problems that an SMT-solver can 
+	help automate. Since SMTCoq doesn't deal with
+	Coq's non-FOL constructs, SMTCoq's tactics 
+	cannot be called on Coq goals that contain, 
+	for instance, anonymous functions or partial function 
+	applications. SMTCoq doesn't deal with 
+	polymorphic types or compound types either. There is a
+	correspondence between types in Coq and theories in SMT, 
+	and only Coq goals that have these particular types can 
+	use the SMT-solver. The integer sort from SMTLIB is 
+	mapped to Coq's $Z$ type, and Coq's $Bool$ type 
+	corresponds to propositional reasoning in SAT or SMT.
+	However, SMTCoq defines custom types 
+	for machine integers and arrays. While these serve as 
+	rich, independent Coq libraries for these types, 
+	they are not standardized in Coq. On the contrary,
+	Sledgehammer only supports the theories of linear 
+	integer arithmetic and bit-vectors, besides equality 
+	over uninterpreted functions which both Sledgehammer 
+	and SMTCoq have support for. Additionally, SMTCoq 
+	doesn't have support for quantified formulas. Although 
+	the goal in Coq is universally quantified, on the SMT 
+	side, it amounts to checking the unsatisfiability of a quantifier-free formula. This is not the case with 
+	formulas containing either alternating quantifiers, or 
+	those that occur outside the head of the formula - 
+	SMTCoq will fail on these. Sledgehammer uses Z3's 
+	quantifier proofs to support quantified fragments of 
 	its theories.
 	
 	Premise selection is a crucial part of Sledgehammer. A lot 
 	of research has gone into optimizing premise selection to 
 	make proving more efficient. Consequently, the SMT 
 	integration also uses Sledgehammer's premise selection 
-	mechanisms to supply the SMT solver with the best 
+	mechanisms to supply the SMT-solver with the best 
 	possible hypotheses to prove a goal. This process is 
-	so imperative that using the SMT solver just as a 
+	so imperative that using the SMT-solver just as a 
 	relevance filter for premises has given useful 
 	results. In SMTCoq, each lemma is considered an 
 	independent entity with its set of hypotheses $H$ and 
 	goal $G$ that are translated to an SMTLIB problem. 
 	If the proof of $G$ depends on conjectures stated
-	outside of $H$, the SMT solver will likely not be 
+	outside of $H$, the SMT-solver will likely not be 
 	able to prove them. This difference in 
 	ideology comes from the difference in axiomatizations
-	of theories in SMT solvers and resolution provers. 
+	of theories in SMT-solvers and resolution provers. 
 	Sledgehammer was originally coupled only 
 	with resolution provers that don't have notions of 
 	theories. Any additional axioms of a theory 
 	must be appended to the input of a superposition 
-	prover. SMT solvers have theories encoded into them, 
+	prover. SMT-solvers have theories encoded into them, 
 	which might have facts besides $H$ that might help 
 	prove $G$. However, this might not always be the case.
-	We propose an extension to SMTCoq using abduction 
-	to deal with this shortcoming.
+	In the next section, we propose an extension to SMTCoq 
+	using abduction to deal with this shortcoming.
 	
-	The Sledgehammer integration with SMT solvers is 
+	The Sledgehammer integration with SMT-solvers is 
 	specific to Z3 (although there are looser integrations 
-	with other SMT solvers). Although SMT solvers have 
+	with other SMT-solvers). Although SMT-solvers have 
 	a common input/output syntax in SMTLIB, their 
 	proof formats are quite different. Extending 
 	Sledgehammer's \textit{smt} tactic to other 
-	SMT solvers might not be straightforward due to 
+	SMT-solvers might not be straightforward due to 
 	the idiosyncrasies of Z3. On the other hand, SMTCoq
 	claims to be generic and extensible. SMTCoq has a 
 	certificate format, that is different from the proof 
-	formats of each SMT solver. To extend SMTCoq's 
+	formats of each SMT-solver. To extend SMTCoq's 
 	support with a new solver, one only needs to 
 	write a preprocessor that translates proofs from 
 	this solver's format to that of the SMTCoq certificate.
@@ -1098,17 +1202,57 @@
 	enough to add more theories simply by extending 
 	the type of terms in SMTCoq. These claims are reinforced
 	by extensions to SMTCoq. Initially, it had support only 
-	for the ZChaff SAT solver and the veriT SMT solver, 
+	for the ZChaff SAT solver and the veriT SMT-solver, 
 	with the ability to reason in the theories of EUF and 
-	LIA. Since its inception, the CVC4 SMT solver and 
+	LIA. Since its inception, the CVC4 SMT-solver and 
 	the theories of bit-vectors and arrays have been 
-	added to SMTCoq's capabilities.
+	added to SMTCoq's
+	capabilities~\cite{DBLP:journals/corr/EkiciKKMRT16}.
 	
-	\textcolor{red}{evaluation?}
-	
-\section{Conclusion and Moving Forward}
+\section{Conclusion and Future Work}
 \label{sec:conc}
-
+	We have looked at various integrations between 
+	automatic and interactive theorem provers.
+	Hammers that typically utilize resolution 
+	provers within ITPs have complex premise 
+	selection methods to pick an optimal set 
+	of lemmas that will allow the ATP to prove 
+	the goal. We looked at an extension of 
+	Sledgehammer that applies this framework 
+	with an SMT-solver. On the other hand, 
+	SMTCoq queries SAT- and SMT-solvers with 
+	independent lemmas in Coq and certifies the 
+	solver's result within Coq using computational
+	reflection. These signify the current 
+	approaches to the premise selection problem - 
+	use smart methods to find a good set of 
+	premises that will enable the ATP to find a 
+	proof; alternatively, hope that the ATP's
+	axiomatization is strong enough to have any
+	extra information necessary or fail otherwise. 
+	We suggest involving the user in the premise 
+	selection process with some help from the ATP.
+	Our proposal involves using CVC4's abduction
+	solver~\cite{DBLP:conf/cade/ReynoldsBLT20} in 
+	SMTCoq to do this. For a theory $T$, given a
+	set of axioms $A$ and a goal $G$, abduction 
+	finds a formula $\phi$ (the abduct) - if it 
+	exists - such that 
+	\begin{center}
+		$A \land \phi \models_{T} G$
+	\end{center}
+	In other words, it finds a formula $\phi$ that 
+	is consistent with the axioms and when added 
+	to them, allows for the goal to be proven. 
+	When SMTCoq sends CVC4 a lemma $H \models G$, 
+	if CVC4 fails, the idea would be to have it 
+	return a set of abducts. The user would then 
+	pick the relevant abduct from previously 
+	proven lemmas and query CVC4 with the abduct 
+	added to $H$, thus enabling CVC to prove the 
+	goal. We hope to take SMTCoq's CVC4 integration 
+	forward this way and avoid the premise 
+	selection problem.
 \bibliographystyle{abbrv}
 \bibliography{bib}
 
