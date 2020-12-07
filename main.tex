@@ -213,18 +213,18 @@
 	execution~\cite{DBLP:journals/csur/BaldoniCDDF18}, 
 	which is to analyze multiple execution paths of a program 
 	based on abstractions of the inputs. Other uses of
-	SMT-solvers include program synthesis~\cite{synth}, 
+	SMT solvers include program synthesis~\cite{synth}, 
 	static analysis, and generation of logical interpolants~\cite{DBLP:journals/corr/abs-1111-5652}.
 	
 	Due to the recent emphasis on verifying results from SMT solvers~\cite{10.1145/1670412.1670413,
 	mansur2020detecting, 10.1007/978-3-642-38916-0_3},
-	many SMT-solvers are proof producing. When an 
+	many SMT solvers are proof producing. When an 
 	SMT solver finds that a (quantifier-free )formula is satisfiable, an easily checkable \emph{certificate} 
 	of this is a satisfying model of the formula.
 	However, when a solver 
 	concludes that a formula is unsatisfiable, it is more difficult 
 	to produce an acceptable certificate since this 
-	certificate must contain, in effect, a proof of unsatisfiability. Most SMT-solvers 
+	certificate must contain, in effect, a proof of unsatisfiability. Most SMT solvers 
 	follow some version of the DPLL(T) algorithm, which tries
 	to satisfy the formula by propagating assignments, making 
 	choices on assignments when necessary, and concluding ``unsat''
@@ -282,7 +282,7 @@
 	and the root concludes the empty clause $\bot$.
 	
 	Even though this sort of calculus is common among 
-	proof-producing SMT-solvers, there is no standard 
+	proof-producing SMT solvers, there is no standard 
 	one and each solver uses its own variation.
 	For example, CVC4~\cite{DBLP:conf/cav/BarrettCDHJKRT11} 
 	uses a general proof framework called LFSC or 
@@ -290,7 +290,7 @@
 	that mixes declarative rules with computable programs; 
 	veriT~\cite{10.1007/978-3-642-02959-2_12} uses a 
 	rule-based calculus defined in a 
-	SMTLIB-like syntax; 
+	SMT-LIB-like syntax; 
 	Z3~\cite{10.1007/978-3-540-78800-3_24} uses a 
 	rule-based calculus with a relatively lower level 
 	of granularity.
