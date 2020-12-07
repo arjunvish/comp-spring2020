@@ -83,7 +83,7 @@
 	and offer distinct advantages: ITPs certify their 
 	results with a high degree of trustworthiness although 
 	reaching the proofs might take some time and effort from 
-	the user; \ed{in contrast,} ATPs offer relatively quick and automated results, 
+	the user; in contrast, ATPs offer relatively quick and automated results, 
 	while not providing the same kind of guarantees that ITPs do.
 	A natural research question is whether we can get the best 
 	of both worlds --- reliable proofs with maximum automation. 
@@ -105,25 +105,20 @@
 \section{Technical Preliminaries}
 \label{sec:prelim}
 	Most of the notation and technicalities are 
-	introduced \ed{where needed in this document}. For a thorough introduction 
-	to first order logic and satisfiability 
-	modulo theories, 
+	introduced where needed in this document. For a 
+	thorough introduction to first order logic and 
+	satisfiability modulo theories, 
 	see~\cite{DBLP:reference/mc/BarrettT18}.
-	Briefly, terms are built from literals
-	\ct{This is potentially confusing because there are several notions of literal in the literature. Clarify further.}, 
-	and formulas are built from terms and quantifiers. Most 
-	verifiers reason over logical formulas. SMT-
-	solvers take as input arbitrary formulas, 
-	but convert them into conjunctive normal
-	form (CNF), which is a conjunction 
-	of clauses (disjunctions of literals)
-	\ct{This is true for superposition provers but not for SMT solvers.
-	Most SMT solvers consider only quantifier-free formulas.
-	Those who accept quantified formulas normalize them differently
-	 (see how CVC4 does it).
-	}
-	Additionally, SMT deals with a sorted FOL -
-	sort is a formal synonym for type. 
+	Briefly, literals are variables or negations of 
+	variables, terms are built from literals, and formulas 
+	are built from terms and quantifiers. Most 
+	provers reason over arbitrary logical formulas
+	which they convert into a normal form for 
+	easier processing. One such normal form is 
+	the conjunction nomal form (CNF). A formula in 
+	CNF is a conjunction of clauses (disjunctions 
+	of literals). Additionally, SMT deals with a 
+	sorted FOL - sort is a formal synonym for type. 
 	
 	We also look at various rule systems. In 
 	general a rule looks like this:
@@ -180,11 +175,11 @@
 \subsection{SMT Solvers}
 \label{smt}
 	Boolean satisfiability, often called the SAT problem, 
-	is the problem of satisfying a Boolean formula, that is, 
-	consistently assigning values of $True$ or $False$ 
+	is the problem of determining if a Boolean formula
+	is satisfiable, that is, whether there is an 
+	assigment of the values of $True$ or $False$ 
 	to the variables of the formula so that the entire 
-	formula evaluates to $True$
-	\ct{This is not what SAT is! SAT is the problem of determining is a formula is satisfiable, that is, is true for some assignment.}
+	formula evaluates to $True$.
 	For example,
 	\begin{center}$(x \lor y) \land z$ \end{center}
 	can be satisfied by the 
@@ -193,9 +188,9 @@
 	is unsatisfiable, no matter what value is assigned to $x$.
 	
 	Satisfiability Modulo Theories~\cite{DBLP:reference/mc/BarrettT18} 
-	or SMT lifts SAT to a level that includes theories\ed{,
-	by considering formulas whose atoms can be not just propositional variables
-	but also atomic formulas in some logical theory of interest.} 
+	or SMT lifts SAT to a level that includes theories,
+	by considering formulas whose atoms can be not just propositional variables but also atomic formulas in 
+	some logical theory of interest.
 	For example, 
 	\begin{center} $(a = b) \land (b = c) \land \neg (a = c)$ 
 	\end{center}
@@ -205,43 +200,35 @@
 	functions/constants we have is syntactical. 
 	This is because, by	transitivity of $a = b$ and $b = c$, 
 	we have $a = c$. SMT 
-	allows us to be more expressive with our formulas, but 
-	this comes at the cost of more complicated decision 
-	procedures
-	\ct{Why decision procedures? Did you say that the theories have a decidable satisfiability problem?}.
+	allows us to be more expressive with our formulas, 
+	but this comes at the cost of more complicated 
+	procedures.
 	
 	SMT solvers have plenty of applications in formal methods 
 	and software verification. For instance, SMT solvers are used 
 	in the back-end of model checkers~\cite{DBLP:books/daglib/0020348}, 
-	which \ed{take as input} input mathematical 
+	which take as input input mathematical 
 	models of a software system, and verify whether they 
-	satisfy a particular \ed{temporal} property or not. Another area of 
-	application is symbolic
+	satisfy a particular temporal property or not. Another area of application is symbolic
 	execution~\cite{DBLP:journals/csur/BaldoniCDDF18}, 
-	which is to analyze a 
-	program to figure out what set of inputs work for each 
-	part of the program \ct{This is a very approximative description of symbolic execution. You can't do better than this?}
-	Other uses of SMT-solvers include 
-	program synthesis~\cite{synth}, static analysis, 
-	and \ed{generation of logical interpolants}~\cite{DBLP:journals/corr/abs-1111-5652}.
+	which is to analyze multiple execution paths of a program 
+	based on abstractions of the inputs. Other uses of
+	SMT-solvers include program synthesis~\cite{synth}, 
+	static analysis, and generation of logical interpolants~\cite{DBLP:journals/corr/abs-1111-5652}.
 	
 	Due to the recent emphasis on verifying results from SMT solvers~\cite{10.1145/1670412.1670413,
 	mansur2020detecting, 10.1007/978-3-642-38916-0_3},
-	many SMT-solvers are proof producing. When an SMT-solver finds 
-	that a formula is satisfiable, an easily checkable \ed{\emph{certificate}} of this is 
-	a satisfying model of the formula
-	\ct{This is true only if the formula is quantifier free. 
-	Models for quantified formulas are a lot trickier to check.
-	}. 
+	many SMT-solvers are proof producing. When an 
+	SMT solver finds that a (quantifier-free )formula is satisfiable, an easily checkable \emph{certificate} 
+	of this is a satisfying model of the formula.
 	However, when a solver 
 	concludes that a formula is unsatisfiable, it is more difficult 
-	to produce an acceptable \ed{certificate since this certificate must 
-	contain, in effect, a proof of unsatisfiability.} 
-	Most SMT-solvers 
+	to produce an acceptable certificate since this 
+	certificate must contain, in effect, a proof of unsatisfiability. Most SMT-solvers 
 	follow some version of the DPLL(T) algorithm, which tries
 	to satisfy the formula by propagating assignments, making 
-	choices on assignments when necessary, and concluding \ed{``unsat''}
-	when all choices have been tried \ed{unsuccessfully}. 
+	choices on assignments when necessary, and concluding ``unsat''
+	when all choices have been tried unsuccessfully. 
 	Since this algorithm 
 	primarily operates on the resolution principle, 
 	a universally accepted proof calculus is one based 
@@ -258,7 +245,8 @@
 	clauses, and gives one clause that is a consequent 
 	of the premises. The idea is that, beginning 
 	with the input clauses and the theory lemmas (which might 
-	have their own sub-proof trees coming from the theory solvers), 
+	have their own sub-proof trees coming from separate 
+	internal solvers called theory solvers), 
 	the tree derives that the empty clause holds, which is the 
 	most basic notion of unsatisfiability since the there 
 	is no way to satisfy the empty clause.
@@ -286,24 +274,26 @@
 	the assertions asserted in the problem as 
 	leaves, as illustrated in \Cref{fig:tree}.
 	Additionally, clauses asserted to 
-	be true by a theory solver \ct{What is a theory solver?}
-	 --- called theory lemmas 
+	be true by a theory solver --- called theory lemmas 
 	- can also be leaves. These are usually 
 	justified by the theory solver, possibly by 
 	a tree rooted at the lemma. Each node in 
 	the tree is an application of a proof rule, 
 	and the root concludes the empty clause $\bot$.
 	
-	Even though \ed{this sort of calculus} is common among 
-	\ed{proof-producing} SMT-solvers, 
-	\ed{there is no standard one and each solver uses its own variation}.
-	\ed{For example,}
-	CVC4 \ed{\cite{cvc4}} uses a \ed{general proof framework} 
-	called LFSC or (Logical Framework with Side Conditions) 
+	Even though this sort of calculus is common among 
+	proof-producing SMT-solvers, there is no standard 
+	one and each solver uses its own variation.
+	For example, CVC4~\cite{DBLP:conf/cav/BarrettCDHJKRT11} 
+	uses a general proof framework called LFSC or 
+	Logical Framework with Side Conditions
 	that mixes declarative rules with computable programs; 
-	veriT\ed{\cite{verit}} uses a rule-based calculus defined in a 
-	SMTLIB-like syntax; Z3 \ed{\cite{z3}} uses a rule-based calculus with 
-	a relatively lower level of granularity.
+	veriT~\cite{10.1007/978-3-642-02959-2_12} uses a 
+	rule-based calculus defined in a 
+	SMTLIB-like syntax; 
+	Z3~\cite{10.1007/978-3-540-78800-3_24} uses a 
+	rule-based calculus with a relatively lower level 
+	of granularity.
 	
 	\subsection{Superposition Provers}
 	\label{sup}
