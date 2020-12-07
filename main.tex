@@ -8,6 +8,10 @@
 \usepackage{mathtools}
 \usepackage{cleveref}
 
+\newcommand{\rem}[1]{\textcolor{red}{[#1]}}
+\newcommand{\ed}[1]{\textcolor{blue}{#1}}
+\newcommand{\ct}[1]{\rem{#1 --ct}}
+
 \begin{document}
 \title{Automating Interactive Theorem Provers and Certifying Automatic Theorem Provers}
 \author{Arjun Viswanathan}
@@ -16,7 +20,8 @@
 \begin{abstract}
 	Interactive theorem provers (ITPs) and automatic theorem provers (ATPs)
 	are two distinct categories of theorem provers on different ends 
-	of the spectrum of verifiers. On one hand, 
+	of the spectrum of theorem proving. 
+	On one hand, 
 	ITPs are typically robust tools with a small, verified kernel, 
 	making them highly reliable. However, they 
 	require user intervention in the proving process, only
@@ -54,14 +59,16 @@
 	of logical formulas. Interaction between the user and the 
 	ATP is kept to a minimum; ideally, the user would provide a 
 	theorem to the ATP and the ATP either proves it or comes up
-	with a counter-example that disproves it. ATPs are broadly divided into satisfiability modulo theories 
-	(SMT)-solvers and superposition provers. Although both 
-	of these have different approaches to proving, they 
-	both look at a formula in terms of its satisfiability. 
-	The satisfiability problem is the dual of the validity
-	problem (proving a formula to be valid) - a formula can 
-	be proved to be valid by establishing that its negation 
-	is unsatisfiable.
+	with a counter-example that disproves it. 
+	Satisfiability modulo theories 
+	(SMT) solvers and superposition provers are two 
+	popular categories of ATPs.  
+	Although both of these have different approaches to 
+	proving, they both look at a formula in terms of 
+	its satisfiability. The satisfiability problem is the dual 
+	of the validity problem (proving a formula to be valid) --- 
+	a formula can be proved to be valid by establishing that 
+	its negation is unsatisfiable.
 	
 	\begin{figure}[t]
 		\centering
@@ -73,31 +80,15 @@
 	\end{figure}
 
 	ATPs and ITPs clearly have different modes of operations
-	and offer distinct advantages - ITPs certify their 
+	and offer distinct advantages: ITPs certify their 
 	results with a high degree of trustworthiness although 
 	reaching the proofs might take some time and effort from 
-	the user; ATPs offer relatively quick and automated results, 
-	while not giving the same kind of guarantees that ITPs do.
+	the user; \ed{in contrast,} ATPs offer relatively quick and automated results, 
+	while not providing the same kind of guarantees that ITPs do.
 	A natural research question is whether we can get the best 
-	of both worlds - reliable proofs with maximum automation. 
+	of both worlds --- reliable proofs with maximum automation. 
 	In this work, we study various tools that 
-	attempt to combine these tools. We conclude with a 
-	more comprehensive study of two state-of-the-art
-	integrations of SMT solvers with proof assistants -
-	the \textit{smt} tactic in Sledgehammer and 
-	SMTCoq. Both these tools use SMT solvers to 
-	automate proofs in ITPs, but approach the 
-	problem very differently. A hammer helps an ITP 
-	prove lemmas by using an ATP to guide its proof search, 
-	and Sledgehammer is	the very first of these. 
-	On the other hand, a certified checker is more 
-	tightly integrated with the ATP - it also converts 
-	proofs produced by the ATPs and 
-	checks them within the ITP. Thus, it gets results 
-	from outside the ITP but certifies them by checking them
-	inside the ITP. SMTCoq is a certified checker 
-	for the Coq proof assistant that uses SMT and SMT solvers
-	for automation.
+	attempt to combine ATPs and ITPs.
 	
 	After specifying the notation used in the rest of the 
 	paper and discussing some tools in the area that 
@@ -114,17 +105,23 @@
 \section{Technical Preliminaries}
 \label{sec:prelim}
 	Most of the notation and technicalities are 
-	introduced inline. For a thorough introduction 
+	introduced \ed{where needed in this document}. For a thorough introduction 
 	to first order logic and satisfiability 
 	modulo theories, 
 	see~\cite{DBLP:reference/mc/BarrettT18}.
-	Briefly, terms are built from literals, 
-	and formulas are built from terms. Most 
-	verifiers reason over logical formulas. SMT 
+	Briefly, terms are built from literals
+	\ct{This is potentially confusing because there are several notions of literal in the literature. Clarify further.}, 
+	and formulas are built from terms and quantifiers. Most 
+	verifiers reason over logical formulas. SMT-
 	solvers take as input arbitrary formulas, 
 	but convert them into conjunctive normal
 	form (CNF), which is a conjunction 
-	of clauses (disjunctions of literals).
+	of clauses (disjunctions of literals)
+	\ct{This is true for superposition provers but not for SMT solvers.
+	Most SMT solvers consider only quantifier-free formulas.
+	Those who accept quantified formulas normalize them differently
+	 (see how CVC4 does it).
+	}
 	Additionally, SMT deals with a sorted FOL -
 	sort is a formal synonym for type. 
 	
@@ -137,7 +134,7 @@
 	The rule called \textit{rule-name} has $n$ 
 	premises $premise_1, ... , premise_n$ and a 
 	conclusion $conclusion$. The rule can be 
-	understood as follows - if all $n$ premises 
+	understood as follows --- if all $n$ premises 
 	are true, then it follows that the $conclusion$
 	is true. Usually, the premises and the conclusion 
 	are formulas but the Z3 SMT solver uses a 
@@ -186,7 +183,9 @@
 	is the problem of satisfying a Boolean formula, that is, 
 	consistently assigning values of $True$ or $False$ 
 	to the variables of the formula so that the entire 
-	formula evaluates to $True$. For example,
+	formula evaluates to $True$
+	\ct{This is not what SAT is! SAT is the problem of determining is a formula is satisfiable, that is, is true for some assignment.}
+	For example,
 	\begin{center}$(x \lor y) \land z$ \end{center}
 	can be satisfied by the 
 	assignment $\{x=True,\ y=False,\ z=True\}$. On the other hand, 
@@ -194,7 +193,9 @@
 	is unsatisfiable, no matter what value is assigned to $x$.
 	
 	Satisfiability Modulo Theories~\cite{DBLP:reference/mc/BarrettT18} 
-	or SMT lifts SAT to a level that includes theories. 
+	or SMT lifts SAT to a level that includes theories\ed{,
+	by considering formulas whose atoms can be not just propositional variables
+	but also atomic formulas in some logical theory of interest.} 
 	For example, 
 	\begin{center} $(a = b) \land (b = c) \land \neg (a = c)$ 
 	\end{center}
@@ -206,35 +207,43 @@
 	we have $a = c$. SMT 
 	allows us to be more expressive with our formulas, but 
 	this comes at the cost of more complicated decision 
-	procedures.
+	procedures
+	\ct{Why decision procedures? Did you say that the theories have a decidable satisfiability problem?}.
 	
 	SMT solvers have plenty of applications in formal methods 
 	and software verification. For instance, SMT solvers are used 
 	in the back-end of model checkers~\cite{DBLP:books/daglib/0020348}, 
-	which input mathematical 
+	which \ed{take as input} input mathematical 
 	models of a software system, and verify whether they 
-	satisfy a particular property or not. Another area of 
+	satisfy a particular \ed{temporal} property or not. Another area of 
 	application is symbolic
 	execution~\cite{DBLP:journals/csur/BaldoniCDDF18}, 
 	which is to analyze a 
 	program to figure out what set of inputs work for each 
-	part of the program. Other uses of SMT solvers include 
+	part of the program \ct{This is a very approximative description of symbolic execution. You can't do better than this?}
+	Other uses of SMT-solvers include 
 	program synthesis~\cite{synth}, static analysis, 
-	and interpolant generation~\cite{DBLP:journals/corr/abs-1111-5652}.
+	and \ed{generation of logical interpolants}~\cite{DBLP:journals/corr/abs-1111-5652}.
 	
 	Due to the recent emphasis on verifying results from SMT solvers~\cite{10.1145/1670412.1670413,
 	mansur2020detecting, 10.1007/978-3-642-38916-0_3},
-	many SMT solvers are proof producing. When an SMT solver finds that a formula is satisfiable, a model that 
-	satisfies the formula serves as an easily checkable proof 
-	of the satisfiability of the formula. However, when a 
-	solver concludes that a formula is unsatisfiable, it is 
-	more difficult to produce an acceptable proof of this. 
-	Most SMT solvers follow some version of the DPLL(T)
-	algorithm, which tries to satisfy the formula by 
-	propagating assignments, making 
-	choices on assignments when necessary, and concluding unsat
-	when all choices have been tried. Since this algorithm 
-	primarily operates on the resolution rule, 
+	many SMT-solvers are proof producing. When an SMT-solver finds 
+	that a formula is satisfiable, an easily checkable \ed{\emph{certificate}} of this is 
+	a satisfying model of the formula
+	\ct{This is true only if the formula is quantifier free. 
+	Models for quantified formulas are a lot trickier to check.
+	}. 
+	However, when a solver 
+	concludes that a formula is unsatisfiable, it is more difficult 
+	to produce an acceptable \ed{certificate since this certificate must 
+	contain, in effect, a proof of unsatisfiability.} 
+	Most SMT-solvers 
+	follow some version of the DPLL(T) algorithm, which tries
+	to satisfy the formula by propagating assignments, making 
+	choices on assignments when necessary, and concluding \ed{``unsat''}
+	when all choices have been tried \ed{unsuccessfully}. 
+	Since this algorithm 
+	primarily operates on the resolution principle, 
 	a universally accepted proof calculus is one based 
 	on resolution. Specifically, a proof of unsatisfiability 
 	of a formula in conjunctive normal form (CNF), is a tree 
@@ -277,19 +286,23 @@
 	the assertions asserted in the problem as 
 	leaves, as illustrated in \Cref{fig:tree}.
 	Additionally, clauses asserted to 
-	be true by a theory solver - called theory lemmas 
+	be true by a theory solver \ct{What is a theory solver?}
+	 --- called theory lemmas 
 	- can also be leaves. These are usually 
 	justified by the theory solver, possibly by 
 	a tree rooted at the lemma. Each node in 
 	the tree is an application of a proof rule, 
 	and the root concludes the empty clause $\bot$.
 	
-	Even though the calculus is common among the SMT solvers, 
-	it hasn't been standardized. CVC4 uses a proof language 
+	Even though \ed{this sort of calculus} is common among 
+	\ed{proof-producing} SMT-solvers, 
+	\ed{there is no standard one and each solver uses its own variation}.
+	\ed{For example,}
+	CVC4 \ed{\cite{cvc4}} uses a \ed{general proof framework} 
 	called LFSC or (Logical Framework with Side Conditions) 
 	that mixes declarative rules with computable programs; 
-	veriT uses a rule-based calculus defined in a 
-	SMT-LIB-like syntax; Z3 uses a rule-based calculus with 
+	veriT\ed{\cite{verit}} uses a rule-based calculus defined in a 
+	SMTLIB-like syntax; Z3 \ed{\cite{z3}} uses a rule-based calculus with 
 	a relatively lower level of granularity.
 	
 	\subsection{Superposition Provers}
@@ -301,7 +314,7 @@
 	duals of each other, picking one over the other 
 	does make a difference in the kinds of problems 
 	that become solvable due to the complexity of 
-	the problem space - the SAT problem is NP-complete
+	the problem space --- the SAT problem is NP-complete
 	and theory reasoning often leads to undecidability.
 	The input problem to a superposition prover is 
 	formulated as a set of axioms that relate to the 
@@ -312,7 +325,7 @@
 	the input formulas into a set of clauses and 
 	uses a small set of inference rules to add 
 	implied clauses to the input set of 
-	clauses - ultimately it tries to derive 
+	clauses --- ultimately it tries to derive 
 	the empty clause or figure out that this 
 	isn't possible. These provers are resolution-based -
 	the most important rule in the calculus is the 
@@ -344,7 +357,7 @@
 	
 	The superposition prover applies the inference 
 	rules to the input set of 
-	clauses until saturation - that is until the 
+	clauses until saturation --- that is until the 
 	resultant set of clauses is closed under the 
 	inference rules. To keep this system
 	efficient, provers use an ordering 
@@ -411,7 +424,7 @@
 	rules, provided by this datatype. This keeps
 	the trusted codebase to a minimum, and 
 	provides strong soundness guarantees. These 
-	include the HOL family of ITPs - HOL Light, 
+	include the HOL family of ITPs --- HOL Light, 
 	HOL4 and Isabelle. Automath is based on type 
 	theory and the Curry-Howard isomorphism, where 
 	propositions or theorem statements are types, 
@@ -606,7 +619,7 @@
 	logic (HOL) to the ATP's first order logic (FOL).
 	Sledgehammer runs this query parallelly by invoking 
 	all available ATPs. If the ATP is able to prove 
-	the conjecture, Isabelle's own prover - Metis - sets 
+	the conjecture, Isabelle's own prover --- Metis --- sets 
 	out to reprove the goal with the same premises. 
 	Essentially, the role of the ATP in this integration 
 	is to filter out relevant facts for Metis to 
@@ -639,10 +652,10 @@
 		consists of a translation from HOL 
 		to multi-sorted or typed FOL. The target 
 		of the translation is the SMT-LIB standard for 
-		SMT solvers. The translation is sound - 
+		SMT solvers. The translation is sound --- 
 		validity of the translated problem implies 
-		validity of the original problem - but not 
-		complete - validity of the original problem 
+		validity of the original problem --- but not 
+		complete --- validity of the original problem 
 		doesn't necessarily imply validity of the 
 		translated problem. HOL is more expressive 
 		than FOL. As such, all first-order terms 
@@ -663,7 +676,7 @@
 		of all functions from some type $\alpha$ to
 		some type $\beta$. This represents a 
 		polymorphic type which is handled using 
-		monomorphization - the process of generating
+		monomorphization --- the process of generating
 		all instances of a set of schematic terms based 
 		on a set of monomorphic terms until a fixed point
 		is reached. This process can be nonterminating. 
@@ -672,7 +685,7 @@
 		actually contribute to proofs are 
 		typically those that are generated by the 
 		first few steps. Compound types 
-		are types constructed from other types - 
+		are types constructed from other types --- 
 		$\kappa\ \tau_1 ... \tau_n$ is a type composed of 
 		the types $\tau_1, ..., \tau_n$. After 
 		recursively monomorphizing the types 
@@ -742,7 +755,7 @@
 		formulas, the root of the tree concludes the 
 		empty clause $\bot$, which is represented by 
 		the sequent $\Pi^\prime \vdash \bot$ where 
-		$\Pi^\prime$ is the \textit{unsat core} - 
+		$\Pi^\prime$ is the \textit{unsat core} --- 
 		a subset of the assertions $\Pi$
 		initially given to Z3 to be shown unsatisfiable.
 		
@@ -867,9 +880,9 @@
 		as above for resolution.
 		
 		Z3 is also proof producing for quantified formulas.
-		$Q$ represents either of the two quantifiers - 
+		$Q$ represents either of the two quantifiers --- 
 		the universal quantifier $\forall$ or the 
-		existential quantifier $\exists$ - and 
+		existential quantifier $\exists$ --- and 
 		$\overline{x}$ represents a list of variables 
 		$x_1,...,x_n$. The following 
 		proof rule allows introduction of quantifiers:
@@ -911,10 +924,10 @@
 		\texttt{th-lemma} rules. The theory of bit-vectors
 		has special \texttt{th-lemma-bv} rules owing to 
 		the fact that bit-vector proofs involve reasoning 
-		about the corresponding bits of a bit-vector - 
+		about the corresponding bits of a bit-vector --- 
 		a process called bit-blasting. 
 		
-		Rewriting is an important part of SMT solvers - 
+		Rewriting is an important part of SMT solvers --- 
 		this process takes 
 		care of various simplifications and 
 		transformations to canonical forms. Z3 
@@ -965,7 +978,7 @@
 		reconstructed, a proof node can be reused 
 		by Sledgehammer. If $\Pi$ is the set of asserted 
 		formulas, $\Pi^\prime$ represents the unsat 
-		core returned by Z3 - the minimal subset of 
+		core returned by Z3 --- the minimal subset of 
 		$\Pi$ required to prove the problem unsat. 
 		After reconstructing the root node, Sledgehammer 
 		checks the rest of the tree to see that only the 
@@ -980,15 +993,15 @@
 		
 		For the theory of bit-vectors, the \textit{smt}
 		tactic involves some additional optimizations 
-		to offset the complexity added by bit-blasting - 
+		to offset the complexity added by bit-blasting --- 
 		a process that can cause exponential blow-up. 
-		One of these - schematic theorem instantiation - 
+		One of these --- schematic theorem instantiation --- 
 		is described in the previous sub-section. 
 		Memoization of theorems, that is, caching of 
 		certain computationally expensive bit-vector 
 		specific theorems in a structure called a term net 
 		also proved useful. These techniques, and many 
-		useful bit-vector rewrite rules - are used 
+		useful bit-vector rewrite rules --- are used 
 		with HOL4 and Isabelle/HOL's existing automation
 		for bit-vector reasoning.
 		
@@ -1025,18 +1038,18 @@
 	terms to have two representations. FOL terms are 
 	represented in Coq using Coq's first-order 
 	terms in a \textit{shallow embedding} and also 
-	using datatypes defined in Coq - the 
+	using datatypes defined in Coq --- the 
 	\textit{deep embedding}. Thus, FOL statements 
 	are naturally represented in Coq in its 
 	shallow embedding. Reflection allows to 
 	prove these statements using computations 
 	on their deep embedding. SMTCoq provides 
 	the tools necessary to switch between the 
-	two embeddings - an \textit{interpretion} 
+	two embeddings --- an \textit{interpretion} 
 	function compiles deep terms to their Coq 
 	counterparts; and \textit{reification} 
 	- written in OCaml without compromising 
-	soundness - transforms shallow terms to the 
+	soundness --- transforms shallow terms to the 
 	corresponding deep terms.
 	
 	A Boolean decision procedure in SMTCoq, checks 
@@ -1049,7 +1062,7 @@
 	manipulate via computations and propositions are 
 	harder to prove.
 	
-	SMTCoq is sound - proven to be correct in Coq 
+	SMTCoq is sound --- proven to be correct in Coq 
 	- but not complete. This means that when an 
 	SMT solver proves a conjecture, we can we be 
 	confident of its response since we get a 
@@ -1128,14 +1141,14 @@
 	
 \section{Comparison}
 \label{sec:comp}
-	Sledgehammer has 3 possible integrations with SMT solvers - 
+	Sledgehammer has 3 possible integrations with SMT solvers --- 
 	it either trusts the SMT solver as an oracle, or uses the 
 	SMT solver as a relevance filter on premises so it can 
 	prove goals efficiently using Metis, or it reconstructs 
 	proofs produced by the SMT solver to produce goals 
 	without compromising the soundness guarantees of the 
 	small LCF-kernel. The third of these is most comparable 
-	to how SMTCoq operates - it sends Coq conjectures to the 
+	to how SMTCoq operates --- it sends Coq conjectures to the 
 	SMT  or SMT solver, which returns a proof of the conjecture 
 	if it finds it to be provable; SMTCoq then checks this 
 	proof within Coq by reflection. SMTCoq can also be used as a 
@@ -1179,7 +1192,7 @@
 	the goal in Coq is universally quantified, on the SMT 
 	side, it amounts to checking the unsatisfiability of a quantifier-free formula. This is not the case with 
 	formulas containing either alternating quantifiers, or 
-	those that occur outside the head of the formula - 
+	those that occur outside the head of the formula --- 
 	SMTCoq will fail on these. Sledgehammer uses Z3's 
 	quantifier proofs to support quantified fragments of 
 	its theories.
@@ -1250,7 +1263,7 @@
 	independent lemmas in Coq and certifies the 
 	solver's result within Coq using computational
 	reflection. These signify the current 
-	approaches to the premise selection problem - 
+	approaches to the premise selection problem --- 
 	use smart methods to find a good set of 
 	premises that will enable the ATP to find a 
 	proof; alternatively, hope that the ATP's
@@ -1262,8 +1275,8 @@
 	solver~\cite{DBLP:conf/cade/ReynoldsBLT20} in 
 	SMTCoq to do this. For a theory $T$, given a
 	set of axioms $A$ and a goal $G$, abduction 
-	finds a formula $\phi$ (the abduct) - if it 
-	exists - such that 
+	finds a formula $\phi$ (the abduct) --- if it 
+	exists --- such that 
 	\begin{center}
 		$A \land \phi \models_{T} G$
 	\end{center}
