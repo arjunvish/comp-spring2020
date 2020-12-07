@@ -8,6 +8,10 @@
 \usepackage{mathtools}
 \usepackage{cleveref}
 
+\newcommand{\rem}[1]{\textcolor{red}{[#1]}}
+\newcommand{\ed}[1]{\textcolor{blue}{#1}}
+\newcommand{\ct}[1]{\rem{#1 --ct}}
+
 \begin{document}
 \title{Automating Interactive Theorem Provers and Certifying Automatic Theorem Provers}
 \author{Arjun Viswanathan}
@@ -16,7 +20,9 @@
 \begin{abstract}
 	Interactive theorem provers (ITPs) and automatic theorem provers (ATPs)
 	are two distinct categories of theorem provers on different ends 
-	of the spectrum of verifiers. On one hand, 
+	of the spectrum of verifiers 
+	\ct{Why re you calling these tools verifiers? Verifiers are widely understood to be tools for software/hardware verification. These are more general tools: theorem provers}.
+	 On one hand, 
 	ITPs are typically robust tools with a small, verified kernel, 
 	making them highly reliable. However, they 
 	require user intervention in the proving process, only
@@ -55,13 +61,18 @@
 	ATP is kept to a minimum; ideally, the user would provide a 
 	theorem to the ATP and the ATP either proves it or comes up
 	with a counter-example that disproves it. ATPs are broadly divided into satisfiability modulo theories 
-	(SMT)-solvers and superposition provers. Although both 
+	(SMT)-solvers and superposition provers. 
+	\ct{There is a lot more than just SMT and superposition provers.
+	Say that those are two of the most popular classes of ATPs.
+	} 
+	Although both 
 	of these have different approaches to proving, they 
 	both look at a formula in terms of its satisfiability. 
 	The satisfiability problem is the dual of the validity
 	problem (proving a formula to be valid) - a formula can 
 	be proved to be valid by establishing that its negation 
 	is unsatisfiable.
+	\ct{The kind of hyphen you need here is ---, not - which is used for compound words. In constrast --  is used for numerical ranges.}
 	
 	\begin{figure}[t]
 		\centering
@@ -72,23 +83,28 @@
 	\end{figure}
 
 	ATPs and ITPs clearly have different modes of operations
-	and offer distinct advantages - ITPs certify their 
+	and offer distinct advantages: ITPs certify their 
 	results with a high degree of trustworthiness although 
 	reaching the proofs might take some time and effort from 
-	the user; ATPs offer relatively quick and automated results, 
-	while not giving the same kind of guarantees that ITPs do.
+	the user; \ed{in contrast,} ATPs offer relatively quick and automated results, 
+	while not providing the same kind of guarantees that ITPs do.
 	A natural research question is whether we can get the best 
 	of both worlds - reliable proofs with maximum automation. 
 	In this work, we study various tools that 
-	attempt to combine these tools. We conclude with a 
+	attempt to combine these tools \ct{Which tools?}. We conclude with a 
 	more comprehensive study of two state-of-the-art
 	integrations of SMT-solvers with proof assistants -
 	the \textit{smt} tactic in Sledgehammer and 
-	SMTCoq. Both these tools use SMT-solvers to 
+	SMTCoq. 
+	\ct{Here you are talking about two specific tools}
+	Both these tools use SMT-solvers to 
 	automate proofs in ITPs, but approach the 
-	problem very differently. A hammer helps an ITP 
+	problem very differently . 
+	\ct{Here instead you have now switched to the class of tools Sledgehammer belongs to, but without introduction.}
+	A hammer helps an ITP 
 	prove lemmas by using an ATP to guide its proof search, 
 	and Sledgehammer is	the very first of these. 
+	\ct{Similar problem here.} 
 	On the other hand, a certified checker is more 
 	tightly integrated with the ATP - it also converts 
 	proofs produced by the ATPs and 
@@ -113,17 +129,23 @@
 \section{Technical Preliminaries}
 \label{sec:prelim}
 	Most of the notation and technicalities are 
-	introduced inline. For a thorough introduction 
+	introduced \ed{where needed in this document}. For a thorough introduction 
 	to first order logic and satisfiability 
 	modulo theories, 
 	see~\cite{DBLP:reference/mc/BarrettT18}.
-	Briefly, terms are built from literals, 
-	and formulas are built from terms. Most 
+	Briefly, terms are built from literals
+	\ct{This is potentially confusing because there are several notions of literal in the literature. Clarify further.}, 
+	and formulas are built from terms and quantifiers. Most 
 	verifiers reason over logical formulas. SMT-
 	solvers take as input arbitrary formulas, 
 	but convert them into conjunctive normal
 	form (CNF), which is a conjunction 
-	of clauses (disjunctions of literals).
+	of clauses (disjunctions of literals)
+	\ct{This is true for superposition provers but not for SMT solvers.
+	Most SMT solvers consider only quantifier-free formulas.
+	Those who accept quantified formulas normalize them differently
+	 (see how CVC4 does it).
+	}
 	Additionally, SMT deals with a sorted FOL -
 	sort is a formal synonym for type. 
 	
@@ -169,7 +191,9 @@
 	is the problem of satisfying a Boolean formula, that is, 
 	consistently assigning values of $True$ or $False$ 
 	to the variables of the formula so that the entire 
-	formula evaluates to $True$. For example,
+	formula evaluates to $True$
+	\ct{This is not what SAT is! SAT is the problem of determining is a formula is satisfiable, that is, is true for some assignment.}
+	For example,
 	\begin{center}$(x \lor y) \land z$ \end{center}
 	can be satisfied by the 
 	assignment $\{x=True,\ y=False,\ z=True\}$. On the other hand, 
@@ -177,7 +201,9 @@
 	is unsatisfiable, no matter what value is assigned to $x$.
 	
 	Satisfiability Modulo Theories~\cite{DBLP:reference/mc/BarrettT18} 
-	or SMT lifts SAT to a level that includes theories. 
+	or SMT lifts SAT to a level that includes theories\ed{,
+	by considering formulas whose atoms can be not just propositional variables
+	but also atomic formulas in some logical theory of interest.} 
 	For example, 
 	\begin{center} $(a = b) \land (b = c) \land \neg (a = c)$ 
 	\end{center}
@@ -186,33 +212,42 @@
 	transitivity of $a = b$ and $b = c$, we have $a = c$. SMT 
 	allows us to be more expressive with our formulas, but 
 	this comes at the cost of more complicated decision 
-	procedures.
+	procedures
+	\ct{Why decision procedures? Did you say that the theories have a decidable satisfiability problem?}.
 	
 	SMT-solvers have plenty of applications in formal methods 
 	and software verification. For instance, SMT-solvers are used 
 	in the back-end of model checkers~\cite{DBLP:books/daglib/0020348}, 
-	which input mathematical 
+	which \ed{take as input} input mathematical 
 	models of a software system, and verify whether they 
-	satisfy a particular property or not. Another area of 
+	satisfy a particular \ed{temporal} property or not. Another area of 
 	application is symbolic
 	execution~\cite{DBLP:journals/csur/BaldoniCDDF18}, 
 	which is to analyze a 
 	program to figure out what set of inputs work for each 
-	part of the program. Other uses of SMT-solvers include 
+	part of the program \ct{This is a very approximative description of symbolic execution. You can't do better than this?}
+	Other uses of SMT-solvers include 
 	program synthesis~\cite{synth}, static analysis, 
-	and interpolant generation~\cite{DBLP:journals/corr/abs-1111-5652}.
+	and \ed{generation of logical interpolants}~\cite{DBLP:journals/corr/abs-1111-5652}.
 	
 	Due to the recent emphasis on verifying results from SMT-solvers~\cite{10.1145/1670412.1670413,
 	mansur2020detecting, 10.1007/978-3-642-38916-0_3},
 	many SMT-solvers are proof producing. When an SMT-solver finds 
-	that a formula is satisfiable, an easily checkable proof of this is 
-	a satisfying model of the formula. However, when a solver 
+	that a formula is satisfiable, an easily checkable \ed{\emph{certificate}} of this is 
+	a satisfying model of the formula
+	\ct{This is true only if the formula is quantifier free. 
+	Models for quantified formulas are a lot trickier to check.
+	}. 
+	However, when a solver 
 	concludes that a formula is unsatisfiable, it is more difficult 
-	to produce an acceptable proof of this. Most SMT-solvers 
+	to produce an acceptable \ed{certificate since this certificate must 
+	contain, in effect, a proof of unsatisfiability.} 
+	Most SMT-solvers 
 	follow some version of the DPLL(T) algorithm, which tries
 	to satisfy the formula by propagating assignments, making 
-	choices on assignments when necessary, and concluding unsat
-	when all choices have been tried. Since this algorithm 
+	choices on assignments when necessary, and concluding \ed{``unsat''}
+	when all choices have been tried \ed{unsuccessfully}. 
+	Since this algorithm 
 	primarily operates on the resolution principle, 
 	a universally accepted proof calculus is one based 
 	on resolution. Specifically, a proof of unsatisfiability 
@@ -253,19 +288,23 @@
 	the assertions asserted in the problem as 
 	leaves, as illustrated in \Cref{fig:tree}.
 	Additionally, clauses asserted to 
-	be true by a theory solver - called theory lemmas 
+	be true by a theory solver \ct{What is a theory solver?}
+	 - called theory lemmas 
 	- can also be leaves. These are usually 
 	justified by the theory solver, possibly by 
 	a tree rooted at the lemma. Each node in 
 	the tree is an application of a proof rule, 
 	and the root concludes the empty clause $\bot$.
 	
-	Even though the calculus is common among the SMT-solvers, 
-	it hasn't been standardized. CVC4 uses a proof language 
+	Even though \ed{this sort of calculus} is common among 
+	\ed{proof-producing} SMT-solvers, 
+	\ed{there is no standard one and each solver uses its own variation}.
+	\ed{For example,}
+	CVC4 \ed{\cite{cvc4}} uses a \ed{general proof framework} 
 	called LFSC or (Logical Framework with Side Conditions) 
 	that mixes declarative rules with computable programs; 
-	veriT uses a rule-bases calculus defined in a 
-	SMTLIB-like syntax; Z3 uses a rule-based calculus with 
+	veriT\ed{\cite{verit}} uses a rule-based calculus defined in a 
+	SMTLIB-like syntax; Z3 \ed{\cite{z3}} uses a rule-based calculus with 
 	a relatively lower level of granularity.
 	
 	\subsection{Superposition Provers}
